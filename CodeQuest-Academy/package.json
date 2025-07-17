@@ -1,0 +1,25 @@
+{
+  "name": "codequest-academy",
+  "version": "1.0.0",
+  "description": "Gamified LeetCode learning journey with progress tracking",
+  "main": "index.js",
+  "scripts": {
+    "start": "node -e \"console.log('Open progress-tracker/index.html in your browser to view progress')\"",
+    "test": "echo \"No tests yet, but we'll add them soon!\"",
+    "serve": "echo \"Open progress-tracker/index.html in your browser\""
+  },
+  "keywords": [
+    "leetcode",
+    "algorithms",
+    "data-structures",
+    "gamification",
+    "learning",
+    "progress-tracking"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/codequest-academy.git"
+  }
+}

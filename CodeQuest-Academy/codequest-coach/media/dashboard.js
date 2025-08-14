@@ -56,7 +56,7 @@ let state = {
   installedAt: null
 };
 
-// Preview mode state
+// Preview mode state - previewLabel kept for potential future features (e.g., mode-specific styling)
 let previewMode = false;
 let previewLabel = '';
 
@@ -101,10 +101,15 @@ function updatePreviewMode(enabled, label) {
     banner.classList.add('preview-on');
     exitButton.classList.remove('hidden');
   } else {
-    banner.textContent = '';
-    banner.classList.add('hidden');
+    banner.textContent = 'Returned to live data.';
     banner.classList.remove('preview-on');
     exitButton.classList.add('hidden');
+    
+    // Announce the transition, then hide the banner after announcement
+    setTimeout(() => {
+      banner.textContent = '';
+      banner.classList.add('hidden');
+    }, 1500);
   }
 }
 

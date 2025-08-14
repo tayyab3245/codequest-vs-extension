@@ -56,7 +56,7 @@ export function buildDashboardHtml(options: DashboardHtmlOptions): string {
         <button id="importLegacy" class="command-btn">Import Legacy</button>
         <button id="exitPreview" class="command-btn hidden">Exit Preview</button>
       </div>
-      <div id="statusMessage" class="status-message hidden"></div>
+      <div id="statusMessage" class="status-message hidden" role="status" aria-live="polite"></div>
     </div>
   </div>
 

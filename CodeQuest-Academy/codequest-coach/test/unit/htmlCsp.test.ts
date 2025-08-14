@@ -115,6 +115,14 @@ describe('HTML/CSP Builder', () => {
       expect(html).to.include('id="statusMessage"');
     });
 
+    it('should include accessibility attributes for live regions', () => {
+      expect(html).to.include('aria-live="polite"');
+      expect(html).to.include('role="status"');
+      // Both previewBanner and statusMessage should have these attributes
+      expect(html.match(/aria-live="polite"/g)).to.have.length(2);
+      expect(html.match(/role="status"/g)).to.have.length(2);
+    });
+
     it('should include command buttons', () => {
       expect(html).to.include('id="startSession"');
       expect(html).to.include('id="endSession"');

@@ -124,7 +124,7 @@ function buildDashboardHtml(options) {
 
     <div class="card">
       <h2>Commands</h2>
-      <div id="previewBanner" class="status-message hidden"></div>
+      <div id="previewBanner" class="status-message hidden" role="status" aria-live="polite" aria-atomic="true"></div>
       <div class="command-grid">
         <button id="startSession" class="command-btn">Start Session</button>
         <button id="endSession" class="command-btn">End Session</button>
@@ -132,7 +132,7 @@ function buildDashboardHtml(options) {
         <button id="importLegacy" class="command-btn">Import Legacy</button>
         <button id="exitPreview" class="command-btn hidden">Exit Preview</button>
       </div>
-      <div id="statusMessage" class="status-message hidden"></div>
+      <div id="statusMessage" class="status-message hidden" role="status" aria-live="polite"></div>
     </div>
   </div>
 
@@ -229,6 +229,7 @@ var DashboardProvider = class {
   }
   webview;
   state;
+  scanDebounceTimer;
   resolveWebviewView(webviewView) {
     this.webview = webviewView.webview;
     webviewView.webview.options = {
@@ -259,8 +260,16 @@ var DashboardProvider = class {
     this.sendStateUpdate();
   }
   async refreshProblemCount() {
-    this.state.problemCount = await this.scanWorkspaceProblems();
-    this.sendStateUpdate();
+    this.debouncedScanProblems();
+  }
+  debouncedScanProblems() {
+    if (this.scanDebounceTimer) {
+      clearTimeout(this.scanDebounceTimer);
+    }
+    this.scanDebounceTimer = setTimeout(async () => {
+      this.state.problemCount = await this.scanWorkspaceProblems();
+      this.sendStateUpdate();
+    }, 300);
   }
   updateCurrentProblem(filePath) {
     this.state.currentProblem = parseProblemPath(filePath);
@@ -341,10 +350,6 @@ var DashboardProvider = class {
     this.state.workspacePath = this.getWorkspacePath();
     this.state.problemCount = await this.scanWorkspaceProblems();
     this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
-    this.webview.postMessage({
-      type: "updateState",
-      data: this.state
-    });
     this.webview.postMessage({
       type: "setPreviewMode",
       data: { enabled: false, label: "" }

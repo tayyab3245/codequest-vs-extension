@@ -114,6 +114,7 @@ export function activate(context: vscode.ExtensionContext) {
 class DashboardProvider implements vscode.WebviewViewProvider {
   private webview: vscode.Webview | undefined;
   private state: ExtensionState;
+  private scanDebounceTimer: NodeJS.Timeout | undefined;
 
   constructor(
     private context: vscode.ExtensionContext,
@@ -163,8 +164,18 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   }
 
   public async refreshProblemCount(): Promise<void> {
-    this.state.problemCount = await this.scanWorkspaceProblems();
-    this.sendStateUpdate();
+    this.debouncedScanProblems();
+  }
+
+  private debouncedScanProblems(): void {
+    if (this.scanDebounceTimer) {
+      clearTimeout(this.scanDebounceTimer);
+    }
+    
+    this.scanDebounceTimer = setTimeout(async () => {
+      this.state.problemCount = await this.scanWorkspaceProblems();
+      this.sendStateUpdate();
+    }, 300);
   }
 
   public updateCurrentProblem(filePath?: string): void {
@@ -259,7 +270,7 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     this.state.problemCount = await this.scanWorkspaceProblems();
     this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
 
-    // Then clear preview mode
+    // Then clear preview mode (updateCurrentProblem already sent updateState)
     this.webview.postMessage({
       type: 'setPreviewMode',
       data: { enabled: false, label: '' }

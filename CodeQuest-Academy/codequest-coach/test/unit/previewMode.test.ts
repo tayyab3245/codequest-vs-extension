@@ -34,6 +34,11 @@ describe('Preview Mode Features', () => {
       expect(html).to.include('aria-atomic="true"');
     });
 
+    it('should include accessibility attributes on statusMessage', () => {
+      expect(html).to.include('id="statusMessage"');
+      expect(html).to.include('<div id="statusMessage" class="status-message hidden" role="status" aria-live="polite">');
+    });
+
     it('should include exitPreview button', () => {
       expect(html).to.include('id="exitPreview"');
       expect(html).to.include('<button id="exitPreview" class="command-btn hidden">Exit Preview</button>');

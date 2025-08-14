@@ -35,8 +35,111 @@ __export(extension_exports, {
 });
 module.exports = __toCommonJS(extension_exports);
 var vscode = __toESM(require("vscode"));
-var fs = __toESM(require("fs"));
 var crypto = __toESM(require("crypto"));
+
+// src/lib/problemPath.ts
+function parseProblemPath(filePath) {
+  if (!filePath) {
+    return null;
+  }
+  const regex = /patterns[\/\\]([^\/\\]+)[\/\\]problem-(\d+)-([^\/\\]+)[\/\\]([0-9]{4}-[0-9]{2}-[0-9]{2})[\/\\]homework\.js$/i;
+  const match = filePath.match(regex);
+  if (!match) {
+    return null;
+  }
+  const patternSlug = match[1];
+  const num = match[2];
+  const nameSlug = match[3];
+  const date = match[4];
+  const pattern = slugToName(patternSlug);
+  const name = slugToName(nameSlug);
+  const difficulty = inferDifficulty(patternSlug, parseInt(num, 10));
+  const key = `patterns/${patternSlug}/problem-${num}-${nameSlug}/${date}/homework.js`;
+  return {
+    pattern,
+    number: num,
+    name,
+    date,
+    difficulty,
+    key
+  };
+}
+function slugToName(slug) {
+  return slug.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
+function inferDifficulty(patternSlug, num) {
+  if (patternSlug === "arrays-and-hashing" || patternSlug === "two-pointers") {
+    if (num <= 3)
+      return "Easy";
+    if (num <= 7)
+      return "Medium";
+    return "Hard";
+  } else {
+    if (num <= 2)
+      return "Easy";
+    return "Medium";
+  }
+}
+
+// src/webview/html.ts
+function buildDashboardHtml(options) {
+  const { cssUri, jsUri, cspSource, nonce } = options;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'none'; img-src ${cspSource} https: data:; style-src ${cspSource}; script-src 'nonce-${nonce}';">
+  <title>CodeQuest Dashboard</title>
+  <link rel="stylesheet" href="${cssUri}">
+</head>
+<body>
+  <div class="header">
+    <h1>CodeQuest Coach</h1>
+    <span id="installedBadge" class="badge">Loading...</span>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Workspace</h2>
+      <div class="workspace-info">
+        <div>Root folder:</div>
+        <div id="workspacePath" class="workspace-path">No folder open</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div id="problemCount" class="stat-value">0</div>
+          <div class="stat-label">Problems found</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Current Problem</h2>
+      <div id="currentProblem">
+        <div class="no-problem">No homework.js file open</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Commands</h2>
+      <div class="command-grid">
+        <button id="startSession" class="command-btn">Start Session</button>
+        <button id="endSession" class="command-btn">End Session</button>
+        <button id="markSolved" class="command-btn">Mark Solved</button>
+        <button id="importLegacy" class="command-btn">Import Legacy</button>
+      </div>
+      <div id="statusMessage" class="status-message hidden"></div>
+    </div>
+  </div>
+
+  <script nonce="${nonce}" src="${jsUri}"></script>
+</body>
+</html>`;
+}
+
+// src/extension.ts
 function activate(context) {
   console.log("CodeQuest Coach extension is activating...");
   let installedAt = context.globalState.get("installedAt");
@@ -68,6 +171,11 @@ function activate(context) {
     vscode.commands.registerCommand("codequest.importLegacy", () => {
       dashboardProvider.handleCommand("Import Legacy invoked");
       vscode.window.showInformationMessage("CodeQuest: Legacy import invoked");
+    })
+  );
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      dashboardProvider.handleWorkspaceChange();
     })
   );
   context.subscriptions.push(
@@ -136,8 +244,12 @@ var DashboardProvider = class {
     this.sendStateUpdate();
   }
   updateCurrentProblem(filePath) {
-    this.state.currentProblem = this.parseProblemPath(filePath);
+    this.state.currentProblem = parseProblemPath(filePath);
     this.sendStateUpdate();
+  }
+  handleWorkspaceChange() {
+    this.state.workspacePath = this.getWorkspacePath();
+    this.refreshProblemCount();
   }
   handleCommand(message) {
     if (this.webview) {
@@ -160,46 +272,6 @@ var DashboardProvider = class {
       return 0;
     }
   }
-  parseProblemPath(filePath) {
-    if (!filePath) {
-      return null;
-    }
-    const regex = /patterns[\/\\]([^\/\\]+)[\/\\]problem-(\d+)-([^\/\\]+)[\/\\]([0-9]{4}-[0-9]{2}-[0-9]{2})[\/\\]homework\.js$/i;
-    const match = filePath.match(regex);
-    if (!match) {
-      return null;
-    }
-    const patternSlug = match[1];
-    const num = match[2];
-    const nameSlug = match[3];
-    const date = match[4];
-    const pattern = this.slugToName(patternSlug);
-    const name = this.slugToName(nameSlug);
-    const difficulty = this.inferDifficulty(patternSlug, parseInt(num, 10));
-    return {
-      pattern,
-      number: num,
-      name,
-      date,
-      difficulty
-    };
-  }
-  slugToName(slug) {
-    return slug.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
-  }
-  inferDifficulty(patternSlug, num) {
-    if (patternSlug === "arrays-and-hashing" || patternSlug === "two-pointers") {
-      if (num <= 3)
-        return "Easy";
-      if (num <= 7)
-        return "Medium";
-      return "Hard";
-    } else {
-      if (num <= 2)
-        return "Easy";
-      return "Medium";
-    }
-  }
   sendStateUpdate() {
     if (this.webview) {
       this.webview.postMessage({
@@ -217,44 +289,12 @@ var DashboardProvider = class {
       vscode.Uri.joinPath(this.context.extensionUri, "media", "dashboard.js")
     );
     const cspSource = webview.cspSource;
-    const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, "media", "dashboard.html");
-    try {
-      let html = fs.readFileSync(htmlPath.fsPath, "utf8");
-      html = html.replace(/\$\{cssUri\}/g, cssUri.toString());
-      html = html.replace(/\$\{jsUri\}/g, jsUri.toString());
-      html = html.replace(/\$\{cspSource\}/g, cspSource);
-      html = html.replace(/\$\{nonce\}/g, nonce);
-      return html;
-    } catch (error) {
-      console.error("Error reading HTML template:", error);
-      return this.getFallbackHtml(cssUri, jsUri, cspSource, nonce);
-    }
-  }
-  getFallbackHtml(cssUri, jsUri, cspSource, nonce) {
-    return `<!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; img-src ${cspSource} https: data:; style-src ${cspSource}; script-src 'nonce-${nonce}';">
-      <title>CodeQuest Dashboard</title>
-      <link rel="stylesheet" href="${cssUri}">
-    </head>
-    <body>
-      <div class="header">
-        <h1>CodeQuest Coach</h1>
-        <span class="badge">Fallback Mode</span>
-      </div>
-      <div class="grid">
-        <div class="card">
-          <h2>Error</h2>
-          <p>Could not load dashboard template. Extension is running in fallback mode.</p>
-        </div>
-      </div>
-      <script nonce="${nonce}" src="${jsUri}"></script>
-    </body>
-    </html>`;
+    return buildDashboardHtml({
+      cssUri: cssUri.toString(),
+      jsUri: jsUri.toString(),
+      cspSource,
+      nonce
+    });
   }
 };
 function deactivate() {

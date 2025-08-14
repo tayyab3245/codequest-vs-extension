@@ -134,10 +134,11 @@ Testing uses Mocha and Chai with TypeScript support:
 
 ## Architecture
 
-- **Extension Host**: `src/extension.ts` - Main extension logic
-- **Dashboard Provider**: Manages webview and state updates
+- **Extension Host**: `src/extension.ts` - Main extension logic with workspace change handling
+- **Dashboard Provider**: Manages webview and state updates with programmatically generated HTML
 - **Workspace Scanner**: Automatically finds and counts problem files
-- **Path Parser**: Extracts metadata from file paths using regex patterns
+- **Path Parser**: `src/lib/problemPath.ts` - Extracts metadata from file paths using regex patterns
+- **HTML Builder**: `src/webview/html.ts` - Generates webview markup with CSP compliance (single source of truth)
 - **State Management**: Uses VS Code globalState for persistence
 
 This extension serves as a foundation for enhanced coding practice workflows within VS Code.

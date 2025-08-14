@@ -1,14 +1,7 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as crypto from 'crypto';
-
-interface ProblemInfo {
-  pattern: string;
-  number: string;
-  name: string;
-  date: string;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-}
+import { parseProblemPath, ProblemInfo } from './lib/problemPath';
+import { buildDashboardHtml } from './webview/html';
 
 interface ExtensionState {
   workspacePath: string;
@@ -59,6 +52,13 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('codequest.importLegacy', () => {
       dashboardProvider.handleCommand('Import Legacy invoked');
       vscode.window.showInformationMessage('CodeQuest: Legacy import invoked');
+    })
+  );
+
+  // Listen for workspace folder changes
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      dashboardProvider.handleWorkspaceChange();
     })
   );
 
@@ -148,8 +148,13 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   }
 
   public updateCurrentProblem(filePath?: string): void {
-    this.state.currentProblem = this.parseProblemPath(filePath);
+    this.state.currentProblem = parseProblemPath(filePath);
     this.sendStateUpdate();
+  }
+
+  public handleWorkspaceChange(): void {
+    this.state.workspacePath = this.getWorkspacePath();
+    this.refreshProblemCount();
   }
 
   public handleCommand(message: string): void {
@@ -176,57 +181,6 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private parseProblemPath(filePath?: string): ProblemInfo | null {
-    if (!filePath) {
-      return null;
-    }
-
-    // Use the exact regex from the specification
-    const regex = /patterns[\/\\]([^\/\\]+)[\/\\]problem-(\d+)-([^\/\\]+)[\/\\]([0-9]{4}-[0-9]{2}-[0-9]{2})[\/\\]homework\.js$/i;
-    const match = filePath.match(regex);
-
-    if (!match) {
-      return null;
-    }
-
-    const patternSlug = match[1];
-    const num = match[2];
-    const nameSlug = match[3];
-    const date = match[4];
-
-    // Convert slug to readable names
-    const pattern = this.slugToName(patternSlug);
-    const name = this.slugToName(nameSlug);
-    const difficulty = this.inferDifficulty(patternSlug, parseInt(num, 10));
-
-    return {
-      pattern,
-      number: num,
-      name,
-      date,
-      difficulty
-    };
-  }
-
-  private slugToName(slug: string): string {
-    return slug
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  }
-
-  private inferDifficulty(patternSlug: string, num: number): 'Easy' | 'Medium' | 'Hard' {
-    // Heuristic difficulty as specified
-    if (patternSlug === 'arrays-and-hashing' || patternSlug === 'two-pointers') {
-      if (num <= 3) return 'Easy';
-      if (num <= 7) return 'Medium';
-      return 'Hard';
-    } else {
-      if (num <= 2) return 'Easy';
-      return 'Medium';
-    }
-  }
-
   private sendStateUpdate(): void {
     if (this.webview) {
       this.webview.postMessage({
@@ -249,47 +203,13 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     );
     const cspSource = webview.cspSource;
 
-    // Read HTML template and replace placeholders
-    const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard.html');
-    
-    try {
-      let html = fs.readFileSync(htmlPath.fsPath, 'utf8');
-      html = html.replace(/\$\{cssUri\}/g, cssUri.toString());
-      html = html.replace(/\$\{jsUri\}/g, jsUri.toString());
-      html = html.replace(/\$\{cspSource\}/g, cspSource);
-      html = html.replace(/\$\{nonce\}/g, nonce);
-      return html;
-    } catch (error) {
-      console.error('Error reading HTML template:', error);
-      return this.getFallbackHtml(cssUri, jsUri, cspSource, nonce);
-    }
-  }
-
-  private getFallbackHtml(cssUri: vscode.Uri, jsUri: vscode.Uri, cspSource: string, nonce: string): string {
-    return `<!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; img-src ${cspSource} https: data:; style-src ${cspSource}; script-src 'nonce-${nonce}';">
-      <title>CodeQuest Dashboard</title>
-      <link rel="stylesheet" href="${cssUri}">
-    </head>
-    <body>
-      <div class="header">
-        <h1>CodeQuest Coach</h1>
-        <span class="badge">Fallback Mode</span>
-      </div>
-      <div class="grid">
-        <div class="card">
-          <h2>Error</h2>
-          <p>Could not load dashboard template. Extension is running in fallback mode.</p>
-        </div>
-      </div>
-      <script nonce="${nonce}" src="${jsUri}"></script>
-    </body>
-    </html>`;
+    // Use the tested HTML builder
+    return buildDashboardHtml({
+      cssUri: cssUri.toString(),
+      jsUri: jsUri.toString(),
+      cspSource,
+      nonce
+    });
   }
 }
 

@@ -61,9 +61,9 @@ function updateCurrentProblem() {
 function showMessage(text, duration = 3000) {
   const el = document.getElementById('statusMessage');
   el.textContent = text;
-  el.style.display = 'block';
+  el.classList.remove('hidden');
   setTimeout(() => {
-    el.style.display = 'none';
+    el.classList.add('hidden');
   }, duration);
 }
 

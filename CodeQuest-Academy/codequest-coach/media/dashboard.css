@@ -189,3 +189,7 @@ body {
   border: 1px solid var(--border);
   color: var(--muted);
 }
+
+.hidden {
+  display: none;
+}

@@ -1,4 +1,14 @@
-<!DOCTYPE html>
+export interface DashboardHtmlOptions {
+  cssUri: string;
+  jsUri: string;
+  cspSource: string;
+  nonce: string;
+}
+
+export function buildDashboardHtml(options: DashboardHtmlOptions): string {
+  const { cssUri, jsUri, cspSource, nonce } = options;
+
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -50,4 +60,5 @@
 
   <script nonce="${nonce}" src="${jsUri}"></script>
 </body>
-</html>
+</html>`;
+}

@@ -89,6 +89,49 @@ Access these via Command Palette (`Ctrl+Shift+P`):
 - `npm run watch` - Build and watch for file changes during development
 - `npm run vscode:prepublish` - Prepare extension for publishing
 
+## Testing
+
+The extension includes a comprehensive test suite with both unit and integration tests.
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run only unit tests
+npm run test:unit
+
+# Run only integration tests  
+npm run test:integration
+
+# Run tests in watch mode
+npm run test:watch
+```
+
+### Test Coverage
+
+**Unit Tests** (`test/unit/`):
+- `problemPath.test.ts` - Path parsing, slug conversion, difficulty inference (51 test cases)
+- `htmlCsp.test.ts` - HTML generation and Content Security Policy validation (23 test cases)
+
+**Integration Tests** (`test/integration/`):
+- `scanProblems.test.ts` - Workspace scanning and file discovery (11 test cases)
+
+### Test Fixtures
+
+The test suite includes realistic workspace fixtures in `test-fixtures/`:
+- `basic-workspace/` - Contains sample problems matching expected structure
+- `empty-workspace/` - Empty directory for testing edge cases
+
+### Dependencies
+
+Testing uses Mocha and Chai with TypeScript support:
+- `mocha` - Test runner
+- `chai` - Assertion library 
+- `ts-node` - TypeScript execution for tests
+- `@types/mocha`, `@types/chai` - Type definitions
+
 ## Architecture
 
 - **Extension Host**: `src/extension.ts` - Main extension logic

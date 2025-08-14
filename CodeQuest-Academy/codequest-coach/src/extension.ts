@@ -7,7 +7,7 @@ interface ExtensionState {
   workspacePath: string;
   problemCount: number;
   currentProblem: ProblemInfo | null;
-  installedAt: string | null;
+  installedAt: string;
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -102,7 +102,8 @@ export function activate(context: vscode.ExtensionContext) {
     watcher,
     watcher.onDidCreate(() => dashboardProvider.refreshProblemCount()),
     watcher.onDidDelete(() => dashboardProvider.refreshProblemCount()),
-    watcher.onDidChange(() => dashboardProvider.refreshProblemCount())
+    watcher.onDidChange(() => dashboardProvider.refreshProblemCount()),
+    { dispose: () => dashboardProvider.dispose() }
   );
 
   // Initial scan and setup
@@ -114,7 +115,7 @@ export function activate(context: vscode.ExtensionContext) {
 class DashboardProvider implements vscode.WebviewViewProvider {
   private webview: vscode.Webview | undefined;
   private state: ExtensionState;
-  private scanDebounceTimer: NodeJS.Timeout | undefined;
+  private refreshDebounce?: NodeJS.Timeout;
 
   constructor(
     private context: vscode.ExtensionContext,
@@ -160,27 +161,29 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   public async performInitialScan(): Promise<void> {
     this.state.problemCount = await this.scanWorkspaceProblems();
     this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
-    this.sendStateUpdate();
   }
 
   public async refreshProblemCount(): Promise<void> {
-    this.debouncedScanProblems();
-  }
-
-  private debouncedScanProblems(): void {
-    if (this.scanDebounceTimer) {
-      clearTimeout(this.scanDebounceTimer);
+    if (this.refreshDebounce) {
+      clearTimeout(this.refreshDebounce);
     }
     
-    this.scanDebounceTimer = setTimeout(async () => {
+    this.refreshDebounce = setTimeout(async () => {
       this.state.problemCount = await this.scanWorkspaceProblems();
       this.sendStateUpdate();
-    }, 300);
+    }, 200);
   }
 
   public updateCurrentProblem(filePath?: string): void {
     this.state.currentProblem = parseProblemPath(filePath);
     this.sendStateUpdate();
+  }
+
+  public dispose(): void {
+    if (this.refreshDebounce) {
+      clearTimeout(this.refreshDebounce);
+      this.refreshDebounce = undefined;
+    }
   }
 
   public handleWorkspaceChange(): void {
@@ -270,10 +273,16 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     this.state.problemCount = await this.scanWorkspaceProblems();
     this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
 
-    // Then clear preview mode (updateCurrentProblem already sent updateState)
+    // Clear preview mode (updateCurrentProblem already sent updateState)
     this.webview.postMessage({
       type: 'setPreviewMode',
       data: { enabled: false, label: '' }
+    });
+
+    // Show confirmation toast
+    this.webview.postMessage({
+      type: 'commandResult',
+      message: 'Returned to live data.'
     });
   }
 

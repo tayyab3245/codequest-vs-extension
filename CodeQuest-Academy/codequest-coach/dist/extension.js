@@ -211,7 +211,8 @@ function activate(context) {
     watcher,
     watcher.onDidCreate(() => dashboardProvider.refreshProblemCount()),
     watcher.onDidDelete(() => dashboardProvider.refreshProblemCount()),
-    watcher.onDidChange(() => dashboardProvider.refreshProblemCount())
+    watcher.onDidChange(() => dashboardProvider.refreshProblemCount()),
+    { dispose: () => dashboardProvider.dispose() }
   );
   dashboardProvider.performInitialScan();
   console.log("CodeQuest Coach extension activated successfully");
@@ -229,7 +230,7 @@ var DashboardProvider = class {
   }
   webview;
   state;
-  scanDebounceTimer;
+  refreshDebounce;
   resolveWebviewView(webviewView) {
     this.webview = webviewView.webview;
     webviewView.webview.options = {
@@ -257,23 +258,25 @@ var DashboardProvider = class {
   async performInitialScan() {
     this.state.problemCount = await this.scanWorkspaceProblems();
     this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
-    this.sendStateUpdate();
   }
   async refreshProblemCount() {
-    this.debouncedScanProblems();
-  }
-  debouncedScanProblems() {
-    if (this.scanDebounceTimer) {
-      clearTimeout(this.scanDebounceTimer);
+    if (this.refreshDebounce) {
+      clearTimeout(this.refreshDebounce);
     }
-    this.scanDebounceTimer = setTimeout(async () => {
+    this.refreshDebounce = setTimeout(async () => {
       this.state.problemCount = await this.scanWorkspaceProblems();
       this.sendStateUpdate();
-    }, 300);
+    }, 200);
   }
   updateCurrentProblem(filePath) {
     this.state.currentProblem = parseProblemPath(filePath);
     this.sendStateUpdate();
+  }
+  dispose() {
+    if (this.refreshDebounce) {
+      clearTimeout(this.refreshDebounce);
+      this.refreshDebounce = void 0;
+    }
   }
   handleWorkspaceChange() {
     this.state.workspacePath = this.getWorkspacePath();
@@ -353,6 +356,10 @@ var DashboardProvider = class {
     this.webview.postMessage({
       type: "setPreviewMode",
       data: { enabled: false, label: "" }
+    });
+    this.webview.postMessage({
+      type: "commandResult",
+      message: "Returned to live data."
     });
   }
   getWorkspacePath() {

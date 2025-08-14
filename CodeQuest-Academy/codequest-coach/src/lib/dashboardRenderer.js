@@ -1,3 +1,5 @@
+// NOTE: mirrored helper; kept in sync by unit test.
+
 /**
  * HTML rendering utilities for the dashboard webview
  */

@@ -1,3 +1,5 @@
+// NOTE: mirrored helper; kept in sync by unit test.
+
 const vscode = acquireVsCodeApi();
 
 // HTML escaping utility

@@ -52,6 +52,23 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('codequest.importLegacy', () => {
       dashboardProvider.handleCommand('Import Legacy invoked');
       vscode.window.showInformationMessage('CodeQuest: Legacy import invoked');
+    }),
+
+    vscode.commands.registerCommand('codequest.previewUiState', async () => {
+      const options = [
+        'Empty Workspace',
+        'No File Open',
+        'Detected Problem',
+        'Skeleton Loading'
+      ];
+      
+      const selected = await vscode.window.showQuickPick(options, {
+        placeHolder: 'Select UI state to preview'
+      });
+      
+      if (selected) {
+        dashboardProvider.previewUiState(selected);
+      }
     })
   );
 
@@ -164,6 +181,66 @@ class DashboardProvider implements vscode.WebviewViewProvider {
         message: message
       });
     }
+  }
+
+  public previewUiState(stateName: string): void {
+    if (!this.webview) return;
+
+    let previewState: ExtensionState;
+    const currentWorkspacePath = this.getWorkspacePath();
+
+    switch (stateName) {
+      case 'Empty Workspace':
+        previewState = {
+          workspacePath: 'No folder open',
+          problemCount: 0,
+          currentProblem: null,
+          installedAt: this.state.installedAt
+        };
+        break;
+      
+      case 'No File Open':
+        previewState = {
+          workspacePath: currentWorkspacePath,
+          problemCount: 3,
+          currentProblem: null,
+          installedAt: this.state.installedAt
+        };
+        break;
+      
+      case 'Detected Problem':
+        previewState = {
+          workspacePath: currentWorkspacePath,
+          problemCount: 3,
+          currentProblem: {
+            pattern: 'Arrays And Hashing',
+            number: '001',
+            name: 'Two Sum',
+            date: '2025-07-15',
+            difficulty: 'Easy',
+            key: 'patterns/arrays-and-hashing/problem-001-two-sum/2025-07-15/homework.js'
+          },
+          installedAt: this.state.installedAt
+        };
+        break;
+      
+      case 'Skeleton Loading':
+        previewState = {
+          workspacePath: 'Loading…',
+          problemCount: 0,
+          currentProblem: null,
+          installedAt: this.state.installedAt
+        };
+        break;
+      
+      default:
+        return;
+    }
+
+    this.webview.postMessage({
+      type: 'updateState',
+      data: previewState
+    });
   }
 
   private getWorkspacePath(): string {

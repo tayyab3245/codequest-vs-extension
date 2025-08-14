@@ -90,7 +90,7 @@ function buildDashboardHtml(options) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; img-src ${cspSource} https: data:; style-src ${cspSource}; script-src ${cspSource} 'nonce-${nonce}';">
+    content="default-src 'none'; img-src ${cspSource} https: data:; style-src ${cspSource}; script-src 'nonce-${nonce}';">
   <title>CodeQuest Dashboard</title>
   <link rel="stylesheet" href="${cssUri}">
 </head>
@@ -171,6 +171,20 @@ function activate(context) {
     vscode.commands.registerCommand("codequest.importLegacy", () => {
       dashboardProvider.handleCommand("Import Legacy invoked");
       vscode.window.showInformationMessage("CodeQuest: Legacy import invoked");
+    }),
+    vscode.commands.registerCommand("codequest.previewUiState", async () => {
+      const options = [
+        "Empty Workspace",
+        "No File Open",
+        "Detected Problem",
+        "Skeleton Loading"
+      ];
+      const selected = await vscode.window.showQuickPick(options, {
+        placeHolder: "Select UI state to preview"
+      });
+      if (selected) {
+        dashboardProvider.previewUiState(selected);
+      }
     })
   );
   context.subscriptions.push(
@@ -258,6 +272,59 @@ var DashboardProvider = class {
         message
       });
     }
+  }
+  previewUiState(stateName) {
+    if (!this.webview)
+      return;
+    let previewState;
+    const currentWorkspacePath = this.getWorkspacePath();
+    switch (stateName) {
+      case "Empty Workspace":
+        previewState = {
+          workspacePath: "No folder open",
+          problemCount: 0,
+          currentProblem: null,
+          installedAt: this.state.installedAt
+        };
+        break;
+      case "No File Open":
+        previewState = {
+          workspacePath: currentWorkspacePath,
+          problemCount: 3,
+          currentProblem: null,
+          installedAt: this.state.installedAt
+        };
+        break;
+      case "Detected Problem":
+        previewState = {
+          workspacePath: currentWorkspacePath,
+          problemCount: 3,
+          currentProblem: {
+            pattern: "Arrays And Hashing",
+            number: "001",
+            name: "Two Sum",
+            date: "2025-07-15",
+            difficulty: "Easy",
+            key: "patterns/arrays-and-hashing/problem-001-two-sum/2025-07-15/homework.js"
+          },
+          installedAt: this.state.installedAt
+        };
+        break;
+      case "Skeleton Loading":
+        previewState = {
+          workspacePath: "Loading\u2026",
+          problemCount: 0,
+          currentProblem: null,
+          installedAt: this.state.installedAt
+        };
+        break;
+      default:
+        return;
+    }
+    this.webview.postMessage({
+      type: "updateState",
+      data: previewState
+    });
   }
   getWorkspacePath() {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];

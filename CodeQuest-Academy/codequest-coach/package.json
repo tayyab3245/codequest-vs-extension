@@ -16,7 +16,8 @@
     "onCommand:codequest.startSession",
     "onCommand:codequest.endSession",
     "onCommand:codequest.markSolved",
-    "onCommand:codequest.importLegacy"
+    "onCommand:codequest.importLegacy",
+    "onCommand:codequest.previewUiState"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -55,6 +56,10 @@
       {
         "command": "codequest.importLegacy",
         "title": "CodeQuest: Import Legacy Training File"
+      },
+      {
+        "command": "codequest.previewUiState",
+        "title": "CodeQuest: Preview UI State"
       }
     ]
   },

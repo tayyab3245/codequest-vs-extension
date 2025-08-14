@@ -149,6 +149,9 @@ class DashboardProvider implements vscode.WebviewViewProvider {
         case 'codequest.importLegacy':
           vscode.commands.executeCommand(message.command);
           break;
+        case 'codequest.requestLiveState':
+          this.exitPreviewMode();
+          break;
       }
     });
   }
@@ -240,6 +243,32 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     this.webview.postMessage({
       type: 'updateState',
       data: previewState
+    });
+
+    this.webview.postMessage({
+      type: 'setPreviewMode',
+      data: { enabled: true, label: stateName }
+    });
+  }
+
+  public async exitPreviewMode(): Promise<void> {
+    if (!this.webview) return;
+
+    // Re-compute live state
+    this.state.workspacePath = this.getWorkspacePath();
+    this.state.problemCount = await this.scanWorkspaceProblems();
+    this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
+
+    // Send live state first
+    this.webview.postMessage({
+      type: 'updateState',
+      data: this.state
+    });
+
+    // Then clear preview mode
+    this.webview.postMessage({
+      type: 'setPreviewMode',
+      data: { enabled: false, label: '' }
     });
   }
 

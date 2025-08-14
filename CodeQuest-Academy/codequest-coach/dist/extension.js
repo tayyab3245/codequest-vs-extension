@@ -124,11 +124,13 @@ function buildDashboardHtml(options) {
 
     <div class="card">
       <h2>Commands</h2>
+      <div id="previewBanner" class="status-message hidden"></div>
       <div class="command-grid">
         <button id="startSession" class="command-btn">Start Session</button>
         <button id="endSession" class="command-btn">End Session</button>
         <button id="markSolved" class="command-btn">Mark Solved</button>
         <button id="importLegacy" class="command-btn">Import Legacy</button>
+        <button id="exitPreview" class="command-btn hidden">Exit Preview</button>
       </div>
       <div id="statusMessage" class="status-message hidden"></div>
     </div>
@@ -245,6 +247,9 @@ var DashboardProvider = class {
         case "codequest.importLegacy":
           vscode.commands.executeCommand(message.command);
           break;
+        case "codequest.requestLiveState":
+          this.exitPreviewMode();
+          break;
       }
     });
   }
@@ -324,6 +329,25 @@ var DashboardProvider = class {
     this.webview.postMessage({
       type: "updateState",
       data: previewState
+    });
+    this.webview.postMessage({
+      type: "setPreviewMode",
+      data: { enabled: true, label: stateName }
+    });
+  }
+  async exitPreviewMode() {
+    if (!this.webview)
+      return;
+    this.state.workspacePath = this.getWorkspacePath();
+    this.state.problemCount = await this.scanWorkspaceProblems();
+    this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
+    this.webview.postMessage({
+      type: "updateState",
+      data: this.state
+    });
+    this.webview.postMessage({
+      type: "setPreviewMode",
+      data: { enabled: false, label: "" }
     });
   }
   getWorkspacePath() {

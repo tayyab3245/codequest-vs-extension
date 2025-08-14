@@ -56,6 +56,10 @@ let state = {
   installedAt: null
 };
 
+// Preview mode state
+let previewMode = false;
+let previewLabel = '';
+
 // UI update functions
 function updateUI() {
   document.getElementById('workspacePath').textContent = state.workspacePath;
@@ -83,6 +87,27 @@ function showMessage(text, duration = 3000) {
   }, duration);
 }
 
+// Preview mode management
+function updatePreviewMode(enabled, label) {
+  previewMode = enabled;
+  previewLabel = label;
+  
+  const banner = document.getElementById('previewBanner');
+  const exitButton = document.getElementById('exitPreview');
+  
+  if (enabled) {
+    banner.textContent = `Preview Mode: ${label}. Click "Exit Preview" to return to live data.`;
+    banner.classList.remove('hidden');
+    banner.classList.add('preview-on');
+    exitButton.classList.remove('hidden');
+  } else {
+    banner.textContent = '';
+    banner.classList.add('hidden');
+    banner.classList.remove('preview-on');
+    exitButton.classList.add('hidden');
+  }
+}
+
 // Message handling
 window.addEventListener('message', event => {
   const message = event.data;
@@ -94,6 +119,9 @@ window.addEventListener('message', event => {
       break;
     case 'commandResult':
       showMessage(message.message);
+      break;
+    case 'setPreviewMode':
+      updatePreviewMode(message.data.enabled, message.data.label);
       break;
   }
 });
@@ -114,6 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('importLegacy').addEventListener('click', () => {
     vscode.postMessage({ command: 'codequest.importLegacy' });
+  });
+
+  document.getElementById('exitPreview').addEventListener('click', () => {
+    vscode.postMessage({ command: 'codequest.requestLiveState' });
   });
 
   // Request initial state

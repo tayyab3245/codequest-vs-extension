@@ -48,11 +48,13 @@ export function buildDashboardHtml(options: DashboardHtmlOptions): string {
 
     <div class="card">
       <h2>Commands</h2>
+      <div id="previewBanner" class="status-message hidden"></div>
       <div class="command-grid">
         <button id="startSession" class="command-btn">Start Session</button>
         <button id="endSession" class="command-btn">End Session</button>
         <button id="markSolved" class="command-btn">Mark Solved</button>
         <button id="importLegacy" class="command-btn">Import Legacy</button>
+        <button id="exitPreview" class="command-btn hidden">Exit Preview</button>
       </div>
       <div id="statusMessage" class="status-message hidden"></div>
     </div>

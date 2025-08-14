@@ -1,0 +1,72 @@
+{
+  "name": "codequest-coach",
+  "displayName": "CodeQuest Coach",
+  "description": "Voice-friendly LeetCode practice dashboard inside VS Code: patterns, timers, activity stats, streaks.",
+  "version": "0.1.0",
+  "publisher": "you",
+  "engines": {
+    "vscode": "^1.86.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:codequest.dashboard",
+    "onCommand:codequest.startSession",
+    "onCommand:codequest.endSession",
+    "onCommand:codequest.markSolved",
+    "onCommand:codequest.importLegacy"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codequest",
+          "title": "CodeQuest",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "codequest": [
+        {
+          "type": "webview",
+          "id": "codequest.dashboard",
+          "name": "Dashboard",
+          "icon": "$(graph)"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "codequest.startSession",
+        "title": "CodeQuest: Start Session"
+      },
+      {
+        "command": "codequest.endSession",
+        "title": "CodeQuest: End Session"
+      },
+      {
+        "command": "codequest.markSolved",
+        "title": "CodeQuest: Mark Current Problem Solved"
+      },
+      {
+        "command": "codequest.importLegacy",
+        "title": "CodeQuest: Import Legacy Training File"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs",
+    "compile": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs",
+    "watch": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.2",
+    "@types/node": "^20.12.7",
+    "@types/vscode": "^1.86.0"
+  },
+  "dependencies": {}
+}

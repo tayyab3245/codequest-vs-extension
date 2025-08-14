@@ -22,3 +22,24 @@ Thumbs.db
 # Cache
 .cache/
 .parcel-cache/
+
+# Personal Learning Progress (keep private)
+# Individual homework and practice files
+**/homework.js
+patterns/
+
+# Personal training and progress tracking
+legacy-training.js
+progress-tracker/
+
+# Any personal solutions or attempts
+**/solutions/
+**/my-solution.js
+**/practice.js
+**/notes.txt
+**/notes.md
+
+# Personal data files
+*.personal.json
+user-progress.json
+my-stats.json

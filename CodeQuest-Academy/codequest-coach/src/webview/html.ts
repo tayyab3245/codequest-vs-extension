@@ -48,7 +48,7 @@ export function buildDashboardHtml(options: DashboardHtmlOptions): string {
 
     <div class="card">
       <h2>Commands</h2>
-      <div id="previewBanner" class="status-message hidden"></div>
+      <div id="previewBanner" class="status-message hidden" role="status" aria-live="polite" aria-atomic="true"></div>
       <div class="command-grid">
         <button id="startSession" class="command-btn">Start Session</button>
         <button id="endSession" class="command-btn">End Session</button>

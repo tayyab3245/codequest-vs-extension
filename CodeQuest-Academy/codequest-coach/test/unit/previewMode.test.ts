@@ -25,7 +25,13 @@ describe('Preview Mode Features', () => {
   describe('HTML elements', () => {
     it('should include previewBanner element', () => {
       expect(html).to.include('id="previewBanner"');
-      expect(html).to.include('<div id="previewBanner" class="status-message hidden">');
+      expect(html).to.include('<div id="previewBanner" class="status-message hidden" role="status" aria-live="polite" aria-atomic="true">');
+    });
+
+    it('should include accessibility attributes on previewBanner', () => {
+      expect(html).to.include('role="status"');
+      expect(html).to.include('aria-live="polite"');
+      expect(html).to.include('aria-atomic="true"');
     });
 
     it('should include exitPreview button', () => {

@@ -259,12 +259,6 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     this.state.problemCount = await this.scanWorkspaceProblems();
     this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
 
-    // Send live state first
-    this.webview.postMessage({
-      type: 'updateState',
-      data: this.state
-    });
-
     // Then clear preview mode
     this.webview.postMessage({
       type: 'setPreviewMode',

@@ -69,6 +69,25 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Listen for document saves to update current problem
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
+      if (document.uri.fsPath.endsWith('homework.js')) {
+        dashboardProvider.updateCurrentProblem(document.uri.fsPath);
+      }
+    })
+  );
+
+  // Create file system watcher for homework.js files
+  const watcher = vscode.workspace.createFileSystemWatcher('**/patterns/**/homework.js');
+  
+  context.subscriptions.push(
+    watcher,
+    watcher.onDidCreate(() => dashboardProvider.refreshProblemCount()),
+    watcher.onDidDelete(() => dashboardProvider.refreshProblemCount()),
+    watcher.onDidChange(() => dashboardProvider.refreshProblemCount())
+  );
+
   // Initial scan and setup
   dashboardProvider.performInitialScan();
   
@@ -120,6 +139,11 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   public async performInitialScan(): Promise<void> {
     this.state.problemCount = await this.scanWorkspaceProblems();
     this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
+    this.sendStateUpdate();
+  }
+
+  public async refreshProblemCount(): Promise<void> {
+    this.state.problemCount = await this.scanWorkspaceProblems();
     this.sendStateUpdate();
   }
 
@@ -216,9 +240,12 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     // Generate a cryptographically strong nonce
     const nonce = crypto.randomBytes(16).toString('base64');
     
-    // Get CSS file URI and CSP source
+    // Get resource URIs and CSP source
     const cssUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard.css')
+    );
+    const jsUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard.js')
     );
     const cspSource = webview.cspSource;
 
@@ -228,23 +255,24 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     try {
       let html = fs.readFileSync(htmlPath.fsPath, 'utf8');
       html = html.replace(/\$\{cssUri\}/g, cssUri.toString());
+      html = html.replace(/\$\{jsUri\}/g, jsUri.toString());
       html = html.replace(/\$\{cspSource\}/g, cspSource);
       html = html.replace(/\$\{nonce\}/g, nonce);
       return html;
     } catch (error) {
       console.error('Error reading HTML template:', error);
-      return this.getFallbackHtml(cssUri, cspSource, nonce);
+      return this.getFallbackHtml(cssUri, jsUri, cspSource, nonce);
     }
   }
 
-  private getFallbackHtml(cssUri: vscode.Uri, cspSource: string, nonce: string): string {
+  private getFallbackHtml(cssUri: vscode.Uri, jsUri: vscode.Uri, cspSource: string, nonce: string): string {
     return `<!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; img-src ${cspSource} data:; style-src ${cspSource}; script-src 'nonce-${nonce}';">
+        content="default-src 'none'; img-src ${cspSource} https: data:; style-src ${cspSource}; script-src 'nonce-${nonce}';">
       <title>CodeQuest Dashboard</title>
       <link rel="stylesheet" href="${cssUri}">
     </head>
@@ -259,10 +287,7 @@ class DashboardProvider implements vscode.WebviewViewProvider {
           <p>Could not load dashboard template. Extension is running in fallback mode.</p>
         </div>
       </div>
-      <script nonce="${nonce}">
-        const vscode = acquireVsCodeApi();
-        console.log('Dashboard running in fallback mode');
-      </script>
+      <script nonce="${nonce}" src="${jsUri}"></script>
     </body>
     </html>`;
   }

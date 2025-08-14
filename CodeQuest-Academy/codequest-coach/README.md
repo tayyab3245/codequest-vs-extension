@@ -42,6 +42,9 @@ npm run watch
    - Click it to open the Dashboard
    - Open a `homework.js` file matching the pattern to see problem detection
 
+## Run & Debug
+Press **F5** to launch the extension in debug mode. The first run triggers a background watch build that automatically rebuilds the extension when you make changes to the source code.
+
 ### Expected Project Structure
 The extension works best with projects following this structure:
 ```

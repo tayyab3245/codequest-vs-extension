@@ -75,6 +75,20 @@ function activate(context) {
       dashboardProvider.updateCurrentProblem(editor?.document.uri.fsPath);
     })
   );
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument((document) => {
+      if (document.uri.fsPath.endsWith("homework.js")) {
+        dashboardProvider.updateCurrentProblem(document.uri.fsPath);
+      }
+    })
+  );
+  const watcher = vscode.workspace.createFileSystemWatcher("**/patterns/**/homework.js");
+  context.subscriptions.push(
+    watcher,
+    watcher.onDidCreate(() => dashboardProvider.refreshProblemCount()),
+    watcher.onDidDelete(() => dashboardProvider.refreshProblemCount()),
+    watcher.onDidChange(() => dashboardProvider.refreshProblemCount())
+  );
   dashboardProvider.performInitialScan();
   console.log("CodeQuest Coach extension activated successfully");
 }
@@ -115,6 +129,10 @@ var DashboardProvider = class {
   async performInitialScan() {
     this.state.problemCount = await this.scanWorkspaceProblems();
     this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
+    this.sendStateUpdate();
+  }
+  async refreshProblemCount() {
+    this.state.problemCount = await this.scanWorkspaceProblems();
     this.sendStateUpdate();
   }
   updateCurrentProblem(filePath) {
@@ -195,27 +213,31 @@ var DashboardProvider = class {
     const cssUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, "media", "dashboard.css")
     );
+    const jsUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.context.extensionUri, "media", "dashboard.js")
+    );
     const cspSource = webview.cspSource;
     const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, "media", "dashboard.html");
     try {
       let html = fs.readFileSync(htmlPath.fsPath, "utf8");
       html = html.replace(/\$\{cssUri\}/g, cssUri.toString());
+      html = html.replace(/\$\{jsUri\}/g, jsUri.toString());
       html = html.replace(/\$\{cspSource\}/g, cspSource);
       html = html.replace(/\$\{nonce\}/g, nonce);
       return html;
     } catch (error) {
       console.error("Error reading HTML template:", error);
-      return this.getFallbackHtml(cssUri, cspSource, nonce);
+      return this.getFallbackHtml(cssUri, jsUri, cspSource, nonce);
     }
   }
-  getFallbackHtml(cssUri, cspSource, nonce) {
+  getFallbackHtml(cssUri, jsUri, cspSource, nonce) {
     return `<!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; img-src ${cspSource} data:; style-src ${cspSource}; script-src 'nonce-${nonce}';">
+        content="default-src 'none'; img-src ${cspSource} https: data:; style-src ${cspSource}; script-src 'nonce-${nonce}';">
       <title>CodeQuest Dashboard</title>
       <link rel="stylesheet" href="${cssUri}">
     </head>
@@ -230,10 +252,7 @@ var DashboardProvider = class {
           <p>Could not load dashboard template. Extension is running in fallback mode.</p>
         </div>
       </div>
-      <script nonce="${nonce}">
-        const vscode = acquireVsCodeApi();
-        console.log('Dashboard running in fallback mode');
-      </script>
+      <script nonce="${nonce}" src="${jsUri}"></script>
     </body>
     </html>`;
   }

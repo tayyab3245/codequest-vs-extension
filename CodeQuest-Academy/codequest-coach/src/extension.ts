@@ -115,7 +115,7 @@ class DashboardProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.options = {
       enableScripts: true,
-      localResourceRoots: [this.context.extensionUri]
+      localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'media')]
     };
 
     webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);

@@ -1,5 +1,53 @@
 const vscode = acquireVsCodeApi();
 
+// HTML escaping utility
+function escapeHtml(text) {
+  if (text == null) return '';
+  return String(text).replace(/[&<>"']/g, function(char) {
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[char];
+  });
+}
+
+// Render problem details as escaped HTML string
+function renderProblemDetails(problem) {
+  if (!problem) {
+    return '<div class="no-problem">No homework.js file open</div>';
+  }
+
+  const difficultyClass = `difficulty-${escapeHtml(problem.difficulty).toLowerCase()}`;
+  
+  return `
+    <div class="problem-details">
+      <div class="problem-row">
+        <span class="problem-label">Pattern:</span>
+        <span class="problem-value">${escapeHtml(problem.pattern)}</span>
+      </div>
+      <div class="problem-row">
+        <span class="problem-label">Problem #:</span>
+        <span class="problem-value">${escapeHtml(problem.number)}</span>
+      </div>
+      <div class="problem-row">
+        <span class="problem-label">Name:</span>
+        <span class="problem-value">${escapeHtml(problem.name)}</span>
+      </div>
+      <div class="problem-row">
+        <span class="problem-label">Date:</span>
+        <span class="problem-value">${escapeHtml(problem.date)}</span>
+      </div>
+      <div class="problem-row">
+        <span class="problem-label">Difficulty:</span>
+        <span class="problem-value ${difficultyClass}">${escapeHtml(problem.difficulty)}</span>
+      </div>
+    </div>
+  `;
+}
+
 // State management
 let state = {
   workspacePath: 'No folder open',
@@ -23,39 +71,7 @@ function updateUI() {
 
 function updateCurrentProblem() {
   const container = document.getElementById('currentProblem');
-  
-  if (!state.currentProblem) {
-    container.innerHTML = '<div class="no-problem">No homework.js file open</div>';
-    return;
-  }
-
-  const p = state.currentProblem;
-  const difficultyClass = `difficulty-${p.difficulty.toLowerCase()}`;
-  
-  container.innerHTML = `
-    <div class="problem-details">
-      <div class="problem-row">
-        <span class="problem-label">Pattern:</span>
-        <span class="problem-value">${p.pattern}</span>
-      </div>
-      <div class="problem-row">
-        <span class="problem-label">Problem #:</span>
-        <span class="problem-value">${p.number}</span>
-      </div>
-      <div class="problem-row">
-        <span class="problem-label">Name:</span>
-        <span class="problem-value">${p.name}</span>
-      </div>
-      <div class="problem-row">
-        <span class="problem-label">Date:</span>
-        <span class="problem-value">${p.date}</span>
-      </div>
-      <div class="problem-row">
-        <span class="problem-label">Difficulty:</span>
-        <span class="problem-value ${difficultyClass}">${p.difficulty}</span>
-      </div>
-    </div>
-  `;
+  container.innerHTML = renderProblemDetails(state.currentProblem);
 }
 
 function showMessage(text, duration = 3000) {

@@ -65,7 +65,7 @@
     "test": "mocha test/**/*.test.ts --require ts-node/register --timeout 5000",
     "test:unit": "mocha test/unit/*.test.ts --require ts-node/register --timeout 3000",
     "test:integration": "mocha test/integration/*.test.ts --require ts-node/register --timeout 10000",
-    "test:watch": "mocha test/**/*.test.ts --require ts-node/register --watch --watch-files test/**/*.ts,src/**/*.ts"
+    "test:watch": "mocha test/**/*.test.ts --require ts-node/register --watch --watch-files test/**/*.ts --watch-files src/**/*.ts"
   },
   "devDependencies": {
     "esbuild": "^0.20.2",

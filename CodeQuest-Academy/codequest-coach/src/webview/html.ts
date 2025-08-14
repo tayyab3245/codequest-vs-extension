@@ -14,7 +14,7 @@ export function buildDashboardHtml(options: DashboardHtmlOptions): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; img-src ${cspSource} https: data:; style-src ${cspSource}; script-src 'nonce-${nonce}';">
+    content="default-src 'none'; img-src ${cspSource} https: data:; style-src ${cspSource}; script-src ${cspSource} 'nonce-${nonce}';">
   <title>CodeQuest Dashboard</title>
   <link rel="stylesheet" href="${cssUri}">
 </head>

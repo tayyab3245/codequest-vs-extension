@@ -41,7 +41,7 @@ describe('Extension HTML Integration (Integrationless)', () => {
       // Shallow parity check with htmlCsp.test.ts guarantees
       expect(html).to.include('Content-Security-Policy');
       expect(html).to.include("default-src 'none'");
-      expect(html).to.include(`script-src 'nonce-${mockNonce}'`);
+      expect(html).to.include(`'nonce-${mockNonce}'`);
       expect(html).to.not.include("'unsafe-inline'");
       expect(html).to.not.include("'unsafe-eval'");
     });

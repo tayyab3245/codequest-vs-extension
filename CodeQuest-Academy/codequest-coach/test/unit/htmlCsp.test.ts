@@ -33,7 +33,11 @@ describe('HTML/CSP Builder', () => {
     });
 
     it('should include nonce-based script-src', () => {
-      expect(html).to.include(`script-src 'nonce-${mockOptions.nonce}'`);
+      expect(html).to.include(`'nonce-${mockOptions.nonce}'`);
+    });
+
+    it('should include cspSource in script-src for external scripts', () => {
+      expect(html).to.include(`script-src ${mockOptions.cspSource} 'nonce-${mockOptions.nonce}'`);
     });
   });
 

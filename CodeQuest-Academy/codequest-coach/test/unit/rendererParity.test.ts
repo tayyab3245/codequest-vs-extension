@@ -66,4 +66,28 @@ describe('Renderer Parity', () => {
     expect(srcContent).to.include(expectedComment);
     expect(mediaContent).to.include(expectedComment);
   });
+
+  it('should have identical filterProblems functions in both src and media', () => {
+    const srcPath = path.join(__dirname, '..', '..', 'src', 'lib', 'dashboardRenderer.js');
+    const mediaPath = path.join(__dirname, '..', '..', 'media', 'dashboard.js');
+
+    const srcContent = fs.readFileSync(srcPath, 'utf8');
+    const mediaContent = fs.readFileSync(mediaPath, 'utf8');
+
+    // Extract filterProblems function from both files
+    const extractFunction = (content: string, functionName: string): string => {
+      const regex = new RegExp(`function ${functionName}\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n\\}`, 'g');
+      const match = regex.exec(content);
+      if (!match) {
+        throw new Error(`Function ${functionName} not found`);
+      }
+      // Normalize whitespace for comparison
+      return match[0].replace(/\s+/g, ' ').trim();
+    };
+
+    const srcFilterProblems = extractFunction(srcContent, 'filterProblems');
+    const mediaFilterProblems = extractFunction(mediaContent, 'filterProblems');
+
+    expect(srcFilterProblems).to.equal(mediaFilterProblems);
+  });
 });

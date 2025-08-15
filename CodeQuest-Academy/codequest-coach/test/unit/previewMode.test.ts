@@ -46,15 +46,19 @@ describe('Preview Mode Features', () => {
 
     it('should have previewBanner positioned before command-grid', () => {
       const bannerIndex = html.indexOf('id="previewBanner"');
-      const gridIndex = html.indexOf('class="command-grid"');
+      // Find the Commands section and then its command-grid
+      const commandsCardStart = html.indexOf('<h2>Commands</h2>');
+      const gridIndex = html.indexOf('class="command-grid"', commandsCardStart);
       expect(bannerIndex).to.be.greaterThan(-1);
       expect(gridIndex).to.be.greaterThan(-1);
       expect(bannerIndex).to.be.lessThan(gridIndex);
     });
 
-    it('should have exitPreview as last button in command-grid', () => {
-      const importIndex = html.indexOf('id="importLegacy"');
-      const exitIndex = html.indexOf('id="exitPreview"');
+    it('should have exitPreview as last button in the commands card', () => {
+      // Look for exitPreview after importLegacy within the Commands section
+      const commandsCardStart = html.indexOf('<h2>Commands</h2>');
+      const importIndex = html.indexOf('id="importLegacy"', commandsCardStart);
+      const exitIndex = html.indexOf('id="exitPreview"', commandsCardStart);
       expect(importIndex).to.be.greaterThan(-1);
       expect(exitIndex).to.be.greaterThan(-1);
       expect(exitIndex).to.be.greaterThan(importIndex);
@@ -62,7 +66,7 @@ describe('Preview Mode Features', () => {
   });
 
   describe('command contributions', () => {
-    it('should not have added new commands beyond existing preview command', () => {
+    it('should include expected commands including newProblem', () => {
       const commands = packageJson.contributes?.commands || [];
       const commandIds = commands.map((cmd: any) => cmd.command);
       
@@ -71,7 +75,9 @@ describe('Preview Mode Features', () => {
         'codequest.endSession',
         'codequest.markSolved',
         'codequest.importLegacy',
-        'codequest.previewUiState'
+        'codequest.previewUiState',
+        'codequest.newProblem',
+        'codequest.openNextUnsolved'
       ];
       
       expect(commandIds).to.have.members(expectedCommands);

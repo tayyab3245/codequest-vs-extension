@@ -118,8 +118,9 @@ describe('HTML/CSP Builder', () => {
     it('should include accessibility attributes for live regions', () => {
       expect(html).to.include('aria-live="polite"');
       expect(html).to.include('role="status"');
-      // Both previewBanner and statusMessage should have these attributes
-      expect(html.match(/aria-live="polite"/g)).to.have.length(2);
+      // previewBanner, statusMessage, and patternStats should have aria-live
+      expect(html.match(/aria-live="polite"/g)).to.have.length(3);
+      // previewBanner and statusMessage should have role="status"
       expect(html.match(/role="status"/g)).to.have.length(2);
     });
 

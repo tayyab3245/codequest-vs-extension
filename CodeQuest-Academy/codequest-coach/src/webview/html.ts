@@ -47,6 +47,21 @@ export function buildDashboardHtml(options: DashboardHtmlOptions): string {
     </div>
 
     <div class="card">
+      <h2>Problems</h2>
+      <div id="patternStats" class="pattern-stats" aria-live="polite"></div>
+      <div id="problemFilters" class="filter-chips" role="tablist" aria-label="Filter problems">
+        <button class="filter-chip active" data-filter="all" role="tab" aria-selected="true">All</button>
+        <button class="filter-chip" data-filter="unsolved" role="tab" aria-selected="false">Unsolved</button>
+        <button class="filter-chip" data-filter="solved" role="tab" aria-selected="false">Solved</button>
+      </div>
+      <div id="problemsList" role="list" aria-busy="false"></div>
+      <div class="command-grid">
+        <button id="newProblem" class="command-btn">New Problem</button>
+        <button id="refreshProblems" class="command-btn">Refresh</button>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Commands</h2>
       <div id="previewBanner" class="status-message hidden" role="status" aria-live="polite" aria-atomic="true"></div>
       <div class="command-grid">

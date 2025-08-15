@@ -17,7 +17,9 @@
     "onCommand:codequest.endSession",
     "onCommand:codequest.markSolved",
     "onCommand:codequest.importLegacy",
-    "onCommand:codequest.previewUiState"
+    "onCommand:codequest.previewUiState",
+    "onCommand:codequest.newProblem",
+    "onCommand:codequest.openNextUnsolved"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -60,6 +62,14 @@
       {
         "command": "codequest.previewUiState",
         "title": "CodeQuest: Preview UI State"
+      },
+      {
+        "command": "codequest.newProblem",
+        "title": "CodeQuest: New Problem"
+      },
+      {
+        "command": "codequest.openNextUnsolved",
+        "title": "CodeQuest: Open Next Unsolved Problem"
       }
     ]
   },

@@ -143,6 +143,115 @@ body {
   color: #ef4444;
 }
 
+/* Problems list styles */
+.problem-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.problem-item:hover {
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+.problem-item:focus {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+.problem-item.solved {
+  opacity: 0.6;
+}
+
+.problem-info {
+  flex: 1;
+}
+
+.problem-name {
+  font-weight: 500;
+}
+
+.problem-meta {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.problem-solved-indicator {
+  color: var(--ok);
+  font-size: 16px;
+  margin-left: 8px;
+}
+
+/* Filter chips */
+.filter-chips {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.filter-chip {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-chip:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--brand);
+}
+
+.filter-chip:focus {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.filter-chip.active {
+  background: var(--brand);
+  color: white;
+  border-color: var(--brand);
+}
+
+/* Pattern stats */
+.pattern-stats {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.pattern-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.pattern-stat-progress {
+  color: var(--ok);
+  font-weight: 500;
+}
+
+#problemsList:empty::after {
+  content: "No problems found. Create a new problem to get started.";
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+  display: block;
+}
+
 .no-problem {
   color: var(--muted);
   font-style: italic;

@@ -60,7 +60,65 @@ function renderProblemDetails(problem) {
   `;
 }
 
+/**
+ * Filter problems based on solved state and filter type
+ * @param {Array} problems - Array of problem objects
+ * @param {string} filter - Filter type: 'all', 'solved', 'unsolved'
+ * @param {Array} solvedKeys - Array of solved problem keys
+ * @returns {Array} Filtered problems array
+ */
+function filterProblems(problems, filter, solvedKeys = []) {
+  if (!problems || !Array.isArray(problems)) return [];
+  
+  const solvedSet = new Set(solvedKeys);
+  
+  switch (filter) {
+    case 'solved':
+      return problems.filter(p => p.key && solvedSet.has(p.key));
+    case 'unsolved':
+      return problems.filter(p => p.key && !solvedSet.has(p.key));
+    default:
+      return problems;
+  }
+}
+
+/**
+ * Compute pattern statistics from problems and solved keys
+ * @param {Array} problems - Array of problem objects
+ * @param {Array} solvedKeys - Array of solved problem keys
+ * @returns {Array} Pattern stats with solved/total counts
+ */
+function computePatternStats(problems, solvedKeys = []) {
+  if (!problems || !Array.isArray(problems)) return [];
+  
+  const solvedSet = new Set(solvedKeys);
+  const patternMap = new Map();
+  
+  // Count total and solved per pattern
+  problems.forEach(problem => {
+    if (!problem.pattern) return;
+    
+    const pattern = problem.pattern;
+    if (!patternMap.has(pattern)) {
+      patternMap.set(pattern, { total: 0, solved: 0 });
+    }
+    
+    const stats = patternMap.get(pattern);
+    stats.total++;
+    if (problem.key && solvedSet.has(problem.key)) {
+      stats.solved++;
+    }
+  });
+  
+  // Convert to array format
+  return Array.from(patternMap.entries()).map(([pattern, stats]) => ({
+    pattern,
+    total: stats.total,
+    solved: stats.solved
+  })).sort((a, b) => a.pattern.localeCompare(b.pattern));
+}
+
 // Export for testing (Node.js environment)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { escapeHtml, renderProblemDetails };
+  module.exports = { escapeHtml, renderProblemDetails, filterProblems, computePatternStats };
 }

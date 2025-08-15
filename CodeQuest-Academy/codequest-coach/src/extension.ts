@@ -1,12 +1,28 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
+import * as path from 'path';
+import * as fs from 'fs';
 import { parseProblemPath, ProblemInfo } from './lib/problemPath';
 import { buildDashboardHtml } from './webview/html';
+
+interface SolvedInfo {
+  solvedAt: string; // ISO string
+}
+
+interface PatternStats {
+  pattern: string;
+  solved: number;
+  total: number;
+}
 
 interface ExtensionState {
   workspacePath: string;
   problemCount: number;
   currentProblem: ProblemInfo | null;
+  problems: ProblemInfo[];
+  solvedKeys: string[]; // array of problem keys that are solved
+  filter: 'all' | 'unsolved' | 'solved';
+  patternStats: PatternStats[];
   installedAt: string;
 }
 
@@ -44,9 +60,12 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage('CodeQuest: Session ended');
     }),
     
-    vscode.commands.registerCommand('codequest.markSolved', () => {
-      dashboardProvider.handleCommand('Mark Solved invoked');
-      vscode.window.showInformationMessage('CodeQuest: Problem marked as solved');
+    vscode.commands.registerCommand('codequest.markSolved', async () => {
+      await dashboardProvider.handleMarkSolved();
+    }),
+    
+    vscode.commands.registerCommand('codequest.openNextUnsolved', async () => {
+      await dashboardProvider.handleOpenNextUnsolved();
     }),
     
     vscode.commands.registerCommand('codequest.importLegacy', () => {
@@ -69,6 +88,10 @@ export function activate(context: vscode.ExtensionContext) {
       if (selected) {
         dashboardProvider.previewUiState(selected);
       }
+    }),
+
+    vscode.commands.registerCommand('codequest.newProblem', async () => {
+      await dashboardProvider.handleNewProblem();
     })
   );
 
@@ -125,8 +148,54 @@ class DashboardProvider implements vscode.WebviewViewProvider {
       workspacePath: this.getWorkspacePath(),
       problemCount: 0,
       currentProblem: null,
+      problems: [],
+      solvedKeys: [],
+      filter: 'all',
+      patternStats: [],
       installedAt: this.installedAt
     };
+    
+    // Load solved state on startup
+    this.loadSolvedState();
+  }
+
+  private loadSolvedState(): void {
+    const solvedData = this.context.globalState.get<Record<string, SolvedInfo>>('cq.solved.v1', {});
+    this.state.solvedKeys = Object.keys(solvedData);
+  }
+
+  private async saveSolvedState(problemKey: string, solved: boolean): Promise<void> {
+    const currentData = this.context.globalState.get<Record<string, SolvedInfo>>('cq.solved.v1', {});
+    
+    if (solved) {
+      currentData[problemKey] = { solvedAt: new Date().toISOString() };
+    } else {
+      delete currentData[problemKey];
+    }
+    
+    await this.context.globalState.update('cq.solved.v1', currentData);
+    this.state.solvedKeys = Object.keys(currentData);
+  }
+
+  private computePatternStats(): PatternStats[] {
+    const patternMap = new Map<string, { solved: number; total: number }>();
+    
+    for (const problem of this.state.problems) {
+      const current = patternMap.get(problem.pattern) || { solved: 0, total: 0 };
+      current.total++;
+      if (this.state.solvedKeys.includes(problem.key)) {
+        current.solved++;
+      }
+      patternMap.set(problem.pattern, current);
+    }
+    
+    return Array.from(patternMap.entries())
+      .map(([pattern, stats]) => ({
+        pattern,
+        solved: stats.solved,
+        total: stats.total
+      }))
+      .sort((a, b) => a.pattern.localeCompare(b.pattern));
   }
 
   public resolveWebviewView(webviewView: vscode.WebviewView): void {
@@ -147,19 +216,36 @@ class DashboardProvider implements vscode.WebviewViewProvider {
           break;
         case 'codequest.startSession':
         case 'codequest.endSession':
-        case 'codequest.markSolved':
         case 'codequest.importLegacy':
           vscode.commands.executeCommand(message.command);
           break;
+        case 'codequest.markSolved':
+          this.handleMarkSolved();
+          break;
         case 'codequest.requestLiveState':
           this.exitPreviewMode();
+          break;
+        case 'codequest.newProblem':
+          this.handleNewProblem();
+          break;
+        case 'codequest.openProblem':
+          this.handleOpenProblem(message.key);
+          break;
+        case 'codequest.refreshProblems':
+          this.handleRefreshProblems();
+          break;
+        case 'codequest.setFilter':
+          this.state.filter = message.filter;
+          this.sendStateUpdate();
           break;
       }
     });
   }
 
   public async performInitialScan(): Promise<void> {
-    this.state.problemCount = await this.scanWorkspaceProblems();
+    this.state.problems = await this.scanWorkspaceList();
+    this.state.problemCount = this.state.problems.length;
+    this.state.patternStats = this.computePatternStats();
     this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
   }
 
@@ -169,7 +255,9 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     }
     
     this.refreshDebounce = setTimeout(async () => {
-      this.state.problemCount = await this.scanWorkspaceProblems();
+      this.state.problems = await this.scanWorkspaceList();
+      this.state.problemCount = this.state.problems.length;
+      this.state.patternStats = this.computePatternStats();
       this.sendStateUpdate();
     }, 200);
   }
@@ -200,6 +288,195 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  public async handleNewProblem(): Promise<void> {
+    try {
+      // Quick pick for pattern
+      const patterns = [
+        'arrays-and-hashing',
+        'two-pointers',
+        'sliding-window',
+        'stack',
+        'binary-search',
+        'dynamic-programming',
+        'graph'
+      ];
+
+      const selectedPattern = await vscode.window.showQuickPick(patterns, {
+        placeHolder: 'Select a pattern for the new problem'
+      });
+
+      if (!selectedPattern) return;
+
+      // Input box for problem name
+      const problemName = await vscode.window.showInputBox({
+        prompt: 'Enter the problem name',
+        placeHolder: 'e.g., "Two Sum", "Valid Palindrome"'
+      });
+
+      if (!problemName) return;
+
+      // Slugify the name
+      const slugifiedName = this.slugifyName(problemName);
+
+      // Get next problem number
+      const nextNumber = await this.getNextProblemNumber(selectedPattern);
+
+      // Build path
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder open');
+        return;
+      }
+
+      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const problemDir = path.join(
+        workspaceFolder.uri.fsPath,
+        'patterns',
+        selectedPattern,
+        `problem-${nextNumber.toString().padStart(3, '0')}-${slugifiedName}`,
+        today
+      );
+
+      const filePath = path.join(problemDir, 'homework.js');
+
+      // Ensure directories exist
+      await fs.promises.mkdir(problemDir, { recursive: true });
+
+      // Create template content
+      const patternTitle = selectedPattern.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+
+      const template = `// Pattern: ${patternTitle} | Problem ${nextNumber.toString().padStart(3, '0')} — ${problemName} | ${today}
+// TODO: write solution; annotate time/space complexity.
+
+function solve(/* input */) {
+  // your code here
+}
+
+module.exports = solve;
+`;
+
+      // Write file
+      await fs.promises.writeFile(filePath, template, 'utf8');
+
+      // Open file
+      const uri = vscode.Uri.file(filePath);
+      await vscode.window.showTextDocument(uri);
+
+      // Refresh state
+      await this.handleRefreshProblems();
+
+      this.handleCommand(`New problem created: ${problemName}`);
+    } catch (error) {
+      console.error('Error creating new problem:', error);
+      vscode.window.showErrorMessage('Failed to create new problem');
+    }
+  }
+
+  public async handleOpenProblem(key: string): Promise<void> {
+    try {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder open');
+        return;
+      }
+
+      const filePath = path.join(workspaceFolder.uri.fsPath, key);
+      const uri = vscode.Uri.file(filePath);
+      await vscode.window.showTextDocument(uri);
+    } catch (error) {
+      console.error('Error opening problem:', error);
+      vscode.window.showErrorMessage('Failed to open problem file');
+    }
+  }
+
+  public async handleRefreshProblems(): Promise<void> {
+    this.state.problems = await this.scanWorkspaceList();
+    this.state.problemCount = this.state.problems.length;
+    this.state.patternStats = this.computePatternStats();
+    this.sendStateUpdate();
+  }
+
+  public async handleMarkSolved(): Promise<void> {
+    if (!this.state.currentProblem) {
+      vscode.window.showWarningMessage('No problem file is currently open');
+      return;
+    }
+
+    const currentKey = this.state.currentProblem.key;
+    const isCurrentlySolved = this.state.solvedKeys.includes(currentKey);
+    
+    try {
+      await this.saveSolvedState(currentKey, !isCurrentlySolved);
+      this.state.patternStats = this.computePatternStats();
+      this.sendStateUpdate();
+      
+      const action = isCurrentlySolved ? 'unmarked as solved' : 'marked as solved';
+      vscode.window.showInformationMessage(`Problem ${action}`);
+    } catch (error) {
+      vscode.window.showErrorMessage('Failed to update solved state');
+    }
+  }
+
+  public async handleOpenNextUnsolved(): Promise<void> {
+    const unsolvedProblems = this.state.problems.filter(p => !this.state.solvedKeys.includes(p.key));
+    
+    if (unsolvedProblems.length === 0) {
+      vscode.window.showInformationMessage('🎉 All problems are solved! Great work!');
+      return;
+    }
+    
+    // Take the first unsolved problem (respects current sort order)
+    const nextProblem = unsolvedProblems[0];
+    await this.handleOpenProblem(nextProblem.key);
+  }
+
+  private slugifyName(name: string): string {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove punctuation
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Collapse multiple hyphens
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+  }
+
+  private async getNextProblemNumber(pattern: string): Promise<number> {
+    try {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) return 1;
+
+      const patternDir = path.join(workspaceFolder.uri.fsPath, 'patterns', pattern);
+      
+      try {
+        const entries = await fs.promises.readdir(patternDir, { withFileTypes: true });
+        const problemDirs = entries.filter(entry => 
+          entry.isDirectory() && entry.name.startsWith('problem-')
+        );
+
+        let maxNumber = 0;
+        for (const dir of problemDirs) {
+          const match = dir.name.match(/^problem-(\d+)-/);
+          if (match) {
+            const number = parseInt(match[1], 10);
+            if (number > maxNumber) {
+              maxNumber = number;
+            }
+          }
+        }
+
+        return maxNumber + 1;
+      } catch {
+        // Directory doesn't exist, start with 1
+        return 1;
+      }
+    } catch (error) {
+      console.error('Error getting next problem number:', error);
+      return 1;
+    }
+  }
+
   public previewUiState(stateName: string): void {
     if (!this.webview) return;
 
@@ -212,6 +489,10 @@ class DashboardProvider implements vscode.WebviewViewProvider {
           workspacePath: 'No folder open',
           problemCount: 0,
           currentProblem: null,
+          problems: [],
+          solvedKeys: [],
+          filter: 'all',
+          patternStats: [],
           installedAt: this.state.installedAt
         };
         break;
@@ -221,6 +502,10 @@ class DashboardProvider implements vscode.WebviewViewProvider {
           workspacePath: currentWorkspacePath,
           problemCount: 3,
           currentProblem: null,
+          problems: [],
+          solvedKeys: [],
+          filter: 'all',
+          patternStats: [],
           installedAt: this.state.installedAt
         };
         break;
@@ -237,6 +522,38 @@ class DashboardProvider implements vscode.WebviewViewProvider {
             difficulty: 'Easy',
             key: 'patterns/arrays-and-hashing/problem-001-two-sum/2025-07-15/homework.js'
           },
+          problems: [
+            {
+              pattern: 'Arrays And Hashing',
+              number: '001',
+              name: 'Two Sum',
+              date: '2025-07-15',
+              difficulty: 'Easy',
+              key: 'patterns/arrays-and-hashing/problem-001-two-sum/2025-07-15/homework.js'
+            },
+            {
+              pattern: 'Arrays And Hashing',
+              number: '002',
+              name: 'Contains Duplicate',
+              date: '2025-07-16',
+              difficulty: 'Easy',
+              key: 'patterns/arrays-and-hashing/problem-002-contains-duplicate/2025-07-16/homework.js'
+            },
+            {
+              pattern: 'Two Pointers',
+              number: '001',
+              name: 'Valid Palindrome',
+              date: '2025-07-17',
+              difficulty: 'Easy',
+              key: 'patterns/two-pointers/problem-001-valid-palindrome/2025-07-17/homework.js'
+            }
+          ],
+          solvedKeys: ['patterns/arrays-and-hashing/problem-002-contains-duplicate/2025-07-16/homework.js'],
+          filter: 'all',
+          patternStats: [
+            { pattern: 'Arrays And Hashing', solved: 1, total: 2 },
+            { pattern: 'Two Pointers', solved: 0, total: 1 }
+          ],
           installedAt: this.state.installedAt
         };
         break;
@@ -246,6 +563,10 @@ class DashboardProvider implements vscode.WebviewViewProvider {
           workspacePath: 'Loading…',
           problemCount: 0,
           currentProblem: null,
+          problems: [],
+          solvedKeys: [],
+          filter: 'all',
+          patternStats: [],
           installedAt: this.state.installedAt
         };
         break;
@@ -270,7 +591,9 @@ class DashboardProvider implements vscode.WebviewViewProvider {
 
     // Re-compute live state
     this.state.workspacePath = this.getWorkspacePath();
-    this.state.problemCount = await this.scanWorkspaceProblems();
+    this.state.problems = await this.scanWorkspaceList();
+    this.state.problemCount = this.state.problems.length;
+    this.state.patternStats = this.computePatternStats();
     this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
 
     // Clear preview mode (updateCurrentProblem already sent updateState)
@@ -278,12 +601,8 @@ class DashboardProvider implements vscode.WebviewViewProvider {
       type: 'setPreviewMode',
       data: { enabled: false, label: '' }
     });
-
-    // Show confirmation toast
-    this.webview.postMessage({
-      type: 'commandResult',
-      message: 'Returned to live data.'
-    });
+    
+    // Note: Remove duplicate toast - banner provides sufficient feedback
   }
 
   private getWorkspacePath(): string {
@@ -291,13 +610,37 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     return workspaceFolder ? workspaceFolder.uri.fsPath : 'No folder open';
   }
 
-  private async scanWorkspaceProblems(): Promise<number> {
+  private async scanWorkspaceList(): Promise<ProblemInfo[]> {
     try {
       const files = await vscode.workspace.findFiles('patterns/**/homework.js');
-      return files.length;
+      const problems: ProblemInfo[] = [];
+
+      for (const file of files) {
+        const problemInfo = parseProblemPath(file.fsPath);
+        if (problemInfo) {
+          problems.push(problemInfo);
+        }
+      }
+
+      // Sort: pattern (A→Z) → Number (desc numeric) → date (desc)
+      problems.sort((a, b) => {
+        // First by pattern name
+        const patternCompare = a.pattern.localeCompare(b.pattern);
+        if (patternCompare !== 0) return patternCompare;
+
+        // Then by number (descending numeric)
+        const numA = parseInt(a.number, 10);
+        const numB = parseInt(b.number, 10);
+        if (numA !== numB) return numB - numA;
+
+        // Finally by date (descending)
+        return b.date.localeCompare(a.date);
+      });
+
+      return problems;
     } catch (error) {
-      console.error('Error scanning workspace problems:', error);
-      return 0;
+      console.error('Error scanning workspace problem list:', error);
+      return [];
     }
   }
 

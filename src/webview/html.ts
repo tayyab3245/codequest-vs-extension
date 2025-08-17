@@ -62,6 +62,12 @@ export function buildDashboardHtml(options: DashboardHtmlOptions): string {
     </div>
 
     <div class="card">
+      <h2>Activity</h2>
+      <div id="sessionTimer" class="session-timer"></div>
+      <div id="calendarHeatmap" class="calendar-heatmap"></div>
+    </div>
+
+    <div class="card">
       <h2>Commands</h2>
       <div id="previewBanner" class="status-message hidden" role="status" aria-live="polite" aria-atomic="true"></div>
       <div class="command-grid">

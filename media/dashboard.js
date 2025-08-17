@@ -59,12 +59,22 @@ let state = {
   installedAt: null,
   solvedKeys: [],
   filter: 'all',
-  patternStats: []
+  patternStats: [],
+  session: {
+    running: false,
+    todayMinutes: 0
+  },
+  calendar: {
+    dailyMinutes: {}
+  }
 };
 
-// Preview mode state - previewLabel kept for potential future features (e.g., mode-specific styling)
+// Preview mode state
 let previewMode = false;
 let previewLabel = '';
+
+// Session timer state
+let sessionUpdateInterval = null;
 
 // UI update functions
 function updateUI() {
@@ -77,8 +87,11 @@ function updateUI() {
   }
 
   updateCurrentProblem();
+  updatePatternStats();
   updateProblemsList();
   updateFilterChips();
+  updateSessionTimer();
+  updateCalendarHeatmap();
 }
 
 function updateFilterChips() {
@@ -98,13 +111,6 @@ function updateFilterChips() {
 function updateCurrentProblem() {
   const container = document.getElementById('currentProblem');
   container.innerHTML = renderProblemDetails(state.currentProblem);
-}
-
-function updateProblemsList() {
-  const container = document.getElementById('problemsList');
-  const filteredProblems = filterProblems(state.problems || [], state.filter || 'all', state.solvedKeys || []);
-  container.innerHTML = renderProblemsList(filteredProblems);
-  updatePatternStats(state.patternStats || []);
 }
 
 function filterProblems(problems, filter, solvedKeys = []) {
@@ -135,32 +141,255 @@ function renderProblemsList(problems) {
     const solvedIndicator = isSolved ? '<span class="problem-solved-indicator">✓</span>' : '';
     
     return `
-      <div class="problem-item${solvedClass}" role="listitem" tabindex="0" data-key="${escapeHtml(problem.key)}">
-        <div class="problem-info">
-          <div class="problem-name">${escapeHtml(problem.pattern)} • #${escapeHtml(problem.number)} ${escapeHtml(problem.name)}</div>
-          <div class="problem-meta">${escapeHtml(problem.date)} · <span class="${difficultyClass}">${escapeHtml(problem.difficulty)}</span></div>
+      <div class="problem-item${solvedClass}" data-key="${escapeHtml(problem.key)}">
+        <div class="problem-header">
+          <span class="problem-number">${escapeHtml(problem.number)}</span>
+          <span class="problem-name">${escapeHtml(problem.name)}</span>
+          ${solvedIndicator}
         </div>
-        ${solvedIndicator}
+        <div class="problem-meta">
+          <span class="problem-pattern">${escapeHtml(problem.pattern)}</span>
+          <span class="problem-difficulty ${difficultyClass}">${escapeHtml(problem.difficulty)}</span>
+        </div>
       </div>
     `;
   }).join('');
 }
 
-function updatePatternStats(patternStats) {
+function updateProblemsList() {
+  const container = document.getElementById('problemsList');
+  const filteredProblems = filterProblems(state.problems, state.filter, state.solvedKeys);
+  container.innerHTML = renderProblemsList(filteredProblems);
+}
+
+function updatePatternStats() {
   const container = document.getElementById('patternStats');
-  if (!patternStats || patternStats.length === 0) {
-    container.innerHTML = '';
+  if (!container) return;
+
+  if (!state.patternStats || state.patternStats.length === 0) {
+    container.innerHTML = '<div class="no-patterns">No patterns found</div>';
     return;
   }
-  
-  const statsHtml = patternStats.map(stat => `
-    <div class="pattern-stat">
-      <span>${escapeHtml(stat.pattern)}</span>
-      <span class="pattern-stat-progress">${stat.solved}/${stat.total} solved</span>
+
+  // Create problems map for difficulty info
+  const problemsMap = {};
+  if (state.problems) {
+    state.problems.forEach(problem => {
+      if (!problemsMap[problem.pattern]) {
+        problemsMap[problem.pattern] = [];
+      }
+      problemsMap[problem.pattern].push(problem);
+    });
+  }
+
+  // Use renderer function
+  const barsHtml = renderPatternBars(state.patternStats, { problemsMap });
+  container.innerHTML = barsHtml;
+}
+
+function updateSessionTimer() {
+  const container = document.getElementById('sessionTimer');
+  if (!container) return;
+
+  if (!state.session) {
+    container.innerHTML = '<div class="today-minutes">No session data</div>';
+    return;
+  }
+
+  let timerHtml = '';
+
+  if (state.session.running && state.session.startedAt) {
+    const elapsed = Date.now() - new Date(state.session.startedAt).getTime();
+    const timeStr = formatSessionTimer(elapsed);
+    
+    timerHtml = `
+      <div class="session-badge running">
+        <span>Session Running</span>
+        <span class="session-time">${escapeHtml(timeStr)}</span>
+      </div>
+    `;
+
+    // Set up live timer updates
+    if (!sessionUpdateInterval) {
+      sessionUpdateInterval = setInterval(() => {
+        if (state.session.running && state.session.startedAt) {
+          const elapsed = Date.now() - new Date(state.session.startedAt).getTime();
+          const timeStr = formatSessionTimer(elapsed);
+          const timeElement = container.querySelector('.session-time');
+          if (timeElement) {
+            timeElement.textContent = timeStr;
+          }
+        }
+      }, 1000);
+    }
+  } else {
+    timerHtml = `
+      <div class="session-badge stopped">
+        <span>No Active Session</span>
+      </div>
+    `;
+
+    // Clear timer updates
+    if (sessionUpdateInterval) {
+      clearInterval(sessionUpdateInterval);
+      sessionUpdateInterval = null;
+    }
+  }
+
+  timerHtml += `<div class="today-minutes">Today: ${state.session.todayMinutes || 0} minutes</div>`;
+  container.innerHTML = timerHtml;
+}
+
+function updateCalendarHeatmap() {
+  const container = document.getElementById('calendarHeatmap');
+  if (!container) return;
+
+  if (!state.calendar || !state.calendar.dailyMinutes) {
+    container.innerHTML = '<div class="calendar-error">Calendar data unavailable</div>';
+    return;
+  }
+
+  // Use renderer functions
+  const buckets = computeCalendarBuckets(state.calendar.dailyMinutes);
+  const heatmapHtml = renderCalendarHeatmap(buckets);
+  container.innerHTML = heatmapHtml;
+}
+
+// Rendering helper functions (mirrored from dashboardRenderer.js)
+function renderPatternBars(patternStats, options = {}) {
+  if (!Array.isArray(patternStats) || patternStats.length === 0) {
+    return '<div class="no-patterns">No patterns found</div>';
+  }
+
+  const problemsMap = options.problemsMap || {};
+
+  return patternStats.map(function(stats) {
+    const segments = [];
+    const patternProblems = problemsMap[stats.pattern] || [];
+    
+    // Create segments based on total count
+    for (let i = 0; i < stats.total; i++) {
+      const problem = patternProblems[i];
+      const difficulty = problem ? problem.difficulty.toLowerCase() : 'easy';
+      const isSolved = i < stats.solved;
+      const segmentClass = `seg-${difficulty} ${isSolved ? 'solved' : 'unsolved'}`;
+      
+      segments.push(`<div class="progress-segment ${segmentClass}" aria-hidden="true"></div>`);
+    }
+
+    const ariaLabel = `${stats.pattern} progress, ${stats.solved} of ${stats.total} solved`;
+
+    return `
+      <div class="pattern-progress" role="group" aria-label="${escapeHtml(ariaLabel)}">
+        <div class="pattern-header">
+          <span class="pattern-name">${escapeHtml(stats.pattern)}</span>
+          <span class="pattern-count">Solved ${stats.solved} / ${stats.total}</span>
+        </div>
+        <div class="progress-bar" role="progressbar" 
+             aria-valuenow="${stats.solved}" 
+             aria-valuemin="0" 
+             aria-valuemax="${stats.total}"
+             aria-valuetext="Solved ${stats.solved} of ${stats.total}"
+             aria-label="${escapeHtml(ariaLabel)}">
+          ${segments.join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function computeCalendarBuckets(dailyMinutes) {
+  const buckets = [];
+  const today = new Date();
+  const msPerDay = 24 * 60 * 60 * 1000;
+
+  // Generate last 8 weeks (56 days)
+  for (let i = 55; i >= 0; i--) {
+    const date = new Date(today.getTime() - i * msPerDay);
+    const dateStr = date.toISOString().split('T')[0];
+    const minutes = dailyMinutes[dateStr] || 0;
+    
+    // Bucket intensity levels: 0, 1-15, 16-30, 31-60, 61+
+    let level = 0;
+    if (minutes > 0) {
+      if (minutes <= 15) level = 1;
+      else if (minutes <= 30) level = 2;
+      else if (minutes <= 60) level = 3;
+      else level = 4;
+    }
+
+    buckets.push({
+      date: dateStr,
+      minutes: minutes,
+      level: level,
+      dayOfWeek: date.getDay(),
+      isToday: dateStr === today.toISOString().split('T')[0]
+    });
+  }
+
+  return buckets;
+}
+
+function renderCalendarHeatmap(buckets) {
+  if (!Array.isArray(buckets)) {
+    return '<div class="calendar-error">Calendar data unavailable</div>';
+  }
+
+  const weeks = [];
+  let currentWeek = [];
+
+  buckets.forEach(function(day, index) {
+    currentWeek.push(day);
+    
+    // End of week (Sunday) or last day
+    if (day.dayOfWeek === 0 || index === buckets.length - 1) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+  });
+
+  const weeksHtml = weeks.map(function(week) {
+    const daysHtml = week.map(function(day) {
+      const levelClass = `lvl-${day.level}`;
+      const todayClass = day.isToday ? 'today' : '';
+      const ariaLabel = `${day.date}: ${day.minutes} minutes`;
+      
+      return `<div class="cal-day ${levelClass} ${todayClass}" 
+                   aria-label="${escapeHtml(ariaLabel)}" 
+                   title="${escapeHtml(ariaLabel)}"
+                   data-date="${escapeHtml(day.date)}"></div>`;
+    }).join('');
+    
+    return `<div class="cal-week">${daysHtml}</div>`;
+  }).join('');
+
+  return `
+    <div class="calendar-container">
+      <div class="calendar-header">Last 8 weeks</div>
+      <div class="calendar-grid">${weeksHtml}</div>
+      <div class="calendar-legend">
+        <span class="legend-label">Less</span>
+        <div class="legend-levels">
+          <div class="legend-level lvl-0" title="0 minutes"></div>
+          <div class="legend-level lvl-1" title="1-15 minutes"></div>
+          <div class="legend-level lvl-2" title="16-30 minutes"></div>
+          <div class="legend-level lvl-3" title="31-60 minutes"></div>
+          <div class="legend-level lvl-4" title="60+ minutes"></div>
+        </div>
+        <span class="legend-label">More</span>
+      </div>
     </div>
-  `).join('');
+  `;
+}
+
+function formatSessionTimer(ms) {
+  if (ms < 0) ms = 0;
   
-  container.innerHTML = statsHtml;
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
 function showMessage(text, duration = 3000) {
@@ -186,15 +415,9 @@ function updatePreviewMode(enabled, label) {
     banner.classList.add('preview-on');
     exitButton.classList.remove('hidden');
   } else {
-    banner.textContent = 'Returned to live data.';
+    banner.classList.add('hidden');
     banner.classList.remove('preview-on');
     exitButton.classList.add('hidden');
-    
-    // Announce the transition, then hide the banner after announcement
-    setTimeout(() => {
-      banner.textContent = '';
-      banner.classList.add('hidden');
-    }, 1500);
   }
 }
 
@@ -204,20 +427,21 @@ window.addEventListener('message', event => {
   
   switch (message.type) {
     case 'updateState':
-      state = { ...state, ...message.data };
+      Object.assign(state, message.data);
       updateUI();
-      break;
-    case 'commandResult':
-      showMessage(message.message);
       break;
     case 'setPreviewMode':
       updatePreviewMode(message.data.enabled, message.data.label);
       break;
+    case 'showMessage':
+      showMessage(message.data.text, message.data.duration);
+      break;
   }
 });
 
-// Command handlers
+// DOM event handlers
 document.addEventListener('DOMContentLoaded', () => {
+  // Command buttons
   document.getElementById('startSession').addEventListener('click', () => {
     vscode.postMessage({ command: 'codequest.startSession' });
   });
@@ -243,27 +467,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Filter chips
-  document.getElementById('problemFilters').addEventListener('click', (e) => {
-    if (e.target.classList.contains('filter-chip')) {
-      const filter = e.target.dataset.filter;
-      
-      // Update local state immediately for responsive UI
-      state.filter = filter;
-      
-      // Update active state
-      document.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.classList.remove('active');
-        chip.setAttribute('aria-selected', 'false');
-      });
-      e.target.classList.add('active');
-      e.target.setAttribute('aria-selected', 'true');
-      
-      // Re-render problems list with new filter
-      updateProblemsList();
-      
-      // Send filter change to extension
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const filter = chip.dataset.filter;
       vscode.postMessage({ command: 'codequest.setFilter', filter });
-    }
+    });
   });
 
   // Problems list event delegation

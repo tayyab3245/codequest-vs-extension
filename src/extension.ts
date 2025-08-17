@@ -15,6 +15,16 @@ interface PatternStats {
   total: number;
 }
 
+interface SessionInfo {
+  running: boolean;
+  startedAt?: string; // ISO string
+  todayMinutes: number;
+}
+
+interface CalendarData {
+  dailyMinutes: Record<string, number>; // 'YYYY-MM-DD' -> minutes
+}
+
 interface ExtensionState {
   workspacePath: string;
   problemCount: number;
@@ -24,6 +34,8 @@ interface ExtensionState {
   filter: 'all' | 'unsolved' | 'solved';
   patternStats: PatternStats[];
   installedAt: string;
+  session: SessionInfo;
+  calendar: CalendarData;
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -50,13 +62,13 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Register commands
   context.subscriptions.push(
-    vscode.commands.registerCommand('codequest.startSession', () => {
-      dashboardProvider.handleCommand('Start Session invoked');
+    vscode.commands.registerCommand('codequest.startSession', async () => {
+      await dashboardProvider.startSession();
       vscode.window.showInformationMessage('CodeQuest: Session started');
     }),
     
-    vscode.commands.registerCommand('codequest.endSession', () => {
-      dashboardProvider.handleCommand('End Session invoked');
+    vscode.commands.registerCommand('codequest.endSession', async () => {
+      await dashboardProvider.endSession();
       vscode.window.showInformationMessage('CodeQuest: Session ended');
     }),
     
@@ -152,16 +164,90 @@ class DashboardProvider implements vscode.WebviewViewProvider {
       solvedKeys: [],
       filter: 'all',
       patternStats: [],
-      installedAt: this.installedAt
+      installedAt: this.installedAt,
+      session: {
+        running: false,
+        todayMinutes: 0
+      },
+      calendar: {
+        dailyMinutes: {}
+      }
     };
     
     // Load solved state on startup
     this.loadSolvedState();
+    // Load session and calendar state
+    this.loadSessionState();
   }
 
   private loadSolvedState(): void {
     const solvedData = this.context.globalState.get<Record<string, SolvedInfo>>('cq.solved.v1', {});
     this.state.solvedKeys = Object.keys(solvedData);
+  }
+
+  private loadSessionState(): void {
+    // Load calendar data
+    const calendarData = this.context.globalState.get<Record<string, number>>('cq.calendar.v1', {});
+    this.state.calendar.dailyMinutes = calendarData;
+
+    // Load today's minutes
+    const today = new Date().toISOString().split('T')[0];
+    this.state.session.todayMinutes = calendarData[today] || 0;
+
+    // Check if session was running (recover from reload)
+    const sessionStartAt = this.context.globalState.get<string>('cq.session.startedAt');
+    if (sessionStartAt) {
+      this.state.session.running = true;
+      this.state.session.startedAt = sessionStartAt;
+    }
+  }
+
+  private async saveCalendarData(): Promise<void> {
+    await this.context.globalState.update('cq.calendar.v1', this.state.calendar.dailyMinutes);
+  }
+
+  private getTodayKey(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  public async startSession(): Promise<void> {
+    if (this.state.session.running) {
+      return; // Already running
+    }
+
+    const now = new Date().toISOString();
+    this.state.session.running = true;
+    this.state.session.startedAt = now;
+    
+    // Persist session start time for recovery
+    await this.context.globalState.update('cq.session.startedAt', now);
+    
+    this.sendStateUpdate();
+  }
+
+  public async endSession(): Promise<void> {
+    if (!this.state.session.running || !this.state.session.startedAt) {
+      return; // Not running
+    }
+
+    const now = new Date();
+    const startTime = new Date(this.state.session.startedAt);
+    const sessionMinutes = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60));
+
+    // Add to today's total
+    const today = this.getTodayKey();
+    this.state.calendar.dailyMinutes[today] = (this.state.calendar.dailyMinutes[today] || 0) + sessionMinutes;
+    this.state.session.todayMinutes = this.state.calendar.dailyMinutes[today];
+
+    // Clear session state
+    this.state.session.running = false;
+    this.state.session.startedAt = undefined;
+
+    // Persist changes
+    await this.saveCalendarData();
+    await this.context.globalState.update('cq.session.startedAt', undefined);
+
+    this.sendStateUpdate();
   }
 
   private async saveSolvedState(problemKey: string, solved: boolean): Promise<void> {
@@ -477,6 +563,27 @@ module.exports = solve;
     }
   }
 
+  private createPreviewState(overrides: Partial<ExtensionState>): ExtensionState {
+    return {
+      workspacePath: 'No folder open',
+      problemCount: 0,
+      currentProblem: null,
+      problems: [],
+      solvedKeys: [],
+      filter: 'all',
+      patternStats: [],
+      installedAt: this.state.installedAt,
+      session: {
+        running: false,
+        todayMinutes: 0
+      },
+      calendar: {
+        dailyMinutes: {}
+      },
+      ...overrides
+    };
+  }
+
   public previewUiState(stateName: string): void {
     if (!this.webview) return;
 
@@ -485,33 +592,18 @@ module.exports = solve;
 
     switch (stateName) {
       case 'Empty Workspace':
-        previewState = {
-          workspacePath: 'No folder open',
-          problemCount: 0,
-          currentProblem: null,
-          problems: [],
-          solvedKeys: [],
-          filter: 'all',
-          patternStats: [],
-          installedAt: this.state.installedAt
-        };
+        previewState = this.createPreviewState({});
         break;
       
       case 'No File Open':
-        previewState = {
+        previewState = this.createPreviewState({
           workspacePath: currentWorkspacePath,
-          problemCount: 3,
-          currentProblem: null,
-          problems: [],
-          solvedKeys: [],
-          filter: 'all',
-          patternStats: [],
-          installedAt: this.state.installedAt
-        };
+          problemCount: 3
+        });
         break;
       
       case 'Detected Problem':
-        previewState = {
+        previewState = this.createPreviewState({
           workspacePath: currentWorkspacePath,
           problemCount: 3,
           currentProblem: {
@@ -549,26 +641,29 @@ module.exports = solve;
             }
           ],
           solvedKeys: ['patterns/arrays-and-hashing/problem-002-contains-duplicate/2025-07-16/homework.js'],
-          filter: 'all',
           patternStats: [
             { pattern: 'Arrays And Hashing', solved: 1, total: 2 },
             { pattern: 'Two Pointers', solved: 0, total: 1 }
           ],
-          installedAt: this.state.installedAt
-        };
+          session: {
+            running: true,
+            startedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(), // 25 minutes ago
+            todayMinutes: 45
+          },
+          calendar: {
+            dailyMinutes: {
+              '2025-08-15': 30,
+              '2025-08-16': 45,
+              '2025-08-17': 45
+            }
+          }
+        });
         break;
       
       case 'Skeleton Loading':
-        previewState = {
-          workspacePath: 'Loading…',
-          problemCount: 0,
-          currentProblem: null,
-          problems: [],
-          solvedKeys: [],
-          filter: 'all',
-          patternStats: [],
-          installedAt: this.state.installedAt
-        };
+        previewState = this.createPreviewState({
+          workspacePath: 'Loading…'
+        });
         break;
       
       default:

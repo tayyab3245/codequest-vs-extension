@@ -50,12 +50,18 @@ describe('Problems HTML Template', () => {
     // Extract cards in order by finding h2 headers
     const currentProblemIndex = html.indexOf('<h2>Current Problem</h2>');
     const problemsIndex = html.indexOf('<h2>Problems</h2>');
+    const activityIndex = html.indexOf('<h2>Activity</h2>');
     const commandsIndex = html.indexOf('<h2>Commands</h2>');
     
-    // Verify order: Current Problem -> Problems -> Commands
+    // Verify order: Current Problem -> Problems -> Activity -> Commands
     expect(currentProblemIndex).to.be.greaterThan(-1);
     expect(problemsIndex).to.be.greaterThan(currentProblemIndex);
-    expect(commandsIndex).to.be.greaterThan(problemsIndex);
+    expect(activityIndex).to.be.greaterThan(problemsIndex);
+    expect(commandsIndex).to.be.greaterThan(activityIndex);
+    
+    // Assert presence of Activity card elements
+    expect(html).to.include('<div id="sessionTimer"');
+    expect(html).to.include('<div id="calendarHeatmap"');
   });
 
   it('should include button container with proper spacing', () => {

@@ -140,8 +140,11 @@ function renderProblemsList(problems) {
     const solvedClass = isSolved ? ' solved' : '';
     const solvedIndicator = isSolved ? '<span class="problem-solved-indicator">✓</span>' : '';
     
+    // Create ARIA label for accessibility
+    const aria = `${problem.number} — ${problem.name} — ${problem.pattern} — ${problem.difficulty}${isSolved ? ' — solved' : ''}`;
+    
     return `
-      <div class="problem-item${solvedClass}" data-key="${escapeHtml(problem.key)}">
+      <div class="problem-item${solvedClass}" role="listitem" tabindex="0" data-key="${escapeHtml(problem.key)}" aria-label="${escapeHtml(aria)}">
         <div class="problem-header">
           <span class="problem-number">${escapeHtml(problem.number)}</span>
           <span class="problem-name">${escapeHtml(problem.name)}</span>
@@ -301,6 +304,7 @@ function renderPatternBars(patternStats, options = {}) {
 function computeCalendarBuckets(dailyMinutes) {
   const buckets = [];
   const today = new Date();
+  const todayUtcStr = new Date().toISOString().split('T')[0];
   const msPerDay = 24 * 60 * 60 * 1000;
 
   // Generate last 8 weeks (56 days)
@@ -318,12 +322,15 @@ function computeCalendarBuckets(dailyMinutes) {
       else level = 4;
     }
 
+    const dayOfWeek = date.getUTCDay();
+    const isToday = dateStr === todayUtcStr;
+
     buckets.push({
       date: dateStr,
       minutes: minutes,
       level: level,
-      dayOfWeek: date.getDay(),
-      isToday: dateStr === today.toISOString().split('T')[0]
+      dayOfWeek: dayOfWeek,
+      isToday: isToday
     });
   }
 

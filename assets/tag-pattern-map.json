@@ -1,0 +1,31 @@
+{
+  "version": "1",
+  "mapping": {
+    "arrays-and-hashing": [
+      "Array", "Hash Table", "Hashing", "Two Pointers"
+    ],
+    "two-pointers": [
+      "Two Pointers", "Sliding Window"
+    ],
+    "sliding-window": [
+      "Sliding Window", "String"
+    ],
+    "stack": [
+      "Stack", "Monotonic Stack", "Parentheses"
+    ],
+    "binary-search": [
+      "Binary Search", "Divide and Conquer"
+    ],
+    "dynamic-programming": [
+      "Dynamic Programming", "Memoization", "Recursion"
+    ],
+    "graph": [
+      "Graph", "Depth-First Search", "Breadth-First Search", "Union Find", "Topological Sort"
+    ]
+  },
+  "difficultyBands": {
+    "Easy": 1,
+    "Medium": 3,
+    "Hard": 5
+  }
+}

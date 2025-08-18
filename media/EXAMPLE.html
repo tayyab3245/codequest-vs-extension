@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeetCode Pattern Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .pattern-bar-segment {
+            height: 16px;
+            border-radius: 4px;
+            transition: flex-grow 0.3s ease-in-out, filter 0.2s ease-in-out;
+            flex-grow: 1;
+        }
+        .pattern-bar-segment.expanded {
+            flex-grow: 2.5;
+        }
+        .pattern-bar-segment:hover {
+            filter: brightness(1.2);
+            z-index: 10;
+        }
+
+        ::-webkit-scrollbar { display: none; } /* Hide scrollbar for all elements */
+        
+        .questions-container { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.4s ease-out, opacity 0.3s ease-out, padding-top 0.4s ease-out; padding-top: 0; }
+        .questions-container.open { max-height: 600px; opacity: 1; padding-top: 1.5rem; }
+
+        .calendar-scroll-container {
+            height: 140px;
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            cursor: grab;
+            user-select: none;
+        }
+        .calendar-scroll-container.grabbing {
+            cursor: grabbing;
+        }
+        .calendar-grid { 
+            display: grid; 
+            grid-template-rows: repeat(7, 1fr); 
+            grid-auto-flow: column; 
+            gap: 1px; /* Tighter gap */
+        }
+        .calendar-day { 
+            width: 18px;
+            height: 18px; 
+            border-radius: 3px; 
+            background-color: #2d2d2d; 
+            cursor: pointer;
+        }
+
+        .status-tag { padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-align: center; }
+        .tag-solved { background-color: rgba(74, 207, 74, 0.1); color: #4acf4a; }
+        .tag-attempted { background-color: rgba(255, 191, 0, 0.1); color: #ffbf00; }
+        .tag-easy, .tag-medium, .tag-hard, .tag-not-started { background-color: rgba(74, 144, 226, 0.1); color: #4a90e2; }
+
+
+        #tooltip {
+            position: absolute;
+            display: none;
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .timer-btn {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .timer-btn-start { background-color: #2a4a3a; color: #4acf4a; }
+        .timer-btn-start:hover { background-color: #3a6a4a; }
+        .timer-btn-stop { background-color: #5a4a2a; color: #ffbf00; }
+        .timer-btn-stop:hover { background-color: #7a6a3a; }
+        .timer-btn-end { background-color: #5a2a2a; color: #f94d4d; }
+        .timer-btn-end:hover { background-color: #7a3a3a; }
+        
+        .btn-solve {
+            background-color: #2d2d2d;
+            color: #ccc;
+            border: 1px solid #555;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-solve:hover {
+            background-color: #4acf4a;
+            color: #121212;
+            border-color: #4acf4a;
+        }
+
+        .analysis-view { transition: opacity 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div id="app-container" class="max-w-7xl mx-auto bg-[#1c1c1c] p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-800">
+        <header class="mb-12 text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2 tracking-tight">LeetCode Pattern Mastery</h1>
+        </header>
+        <div id="patterns-list" class="divide-y divide-gray-800">
+            <!-- Patterns will be inserted here -->
+        </div>
+
+        <div id="analysis-section" class="mt-12 pt-8 border-t border-gray-800">
+            <div id="analysis-container">
+                <div id="calendar-container" class="analysis-view">
+                    <h2 class="text-2xl font-bold text-white mb-6">Activity & Analysis</h2>
+                    <div class="bg-[#2a2a2a] p-6 rounded-xl">
+                        <div>
+                            <h3 class="font-semibold text-white mb-4">Daily Activity</h3>
+                            <div id="calendar-view-content"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="daily-analysis-view" class="analysis-view hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script>
+        // --- UPDATED MOCK DATA: Padded to 20 problems per pattern ---
+        const mockData = {
+            "Arrays & Hashing": {
+                problems: [
+                    { id: "AH-01", name: "217. Contains Duplicate", status: "Solved", difficulty: "easy" },
+                    { id: "AH-02", name: "242. Valid Anagram", status: "Solved", difficulty: "easy" },
+                    { id: "AH-03", name: "1. Two Sum", status: "Easy", difficulty: "easy" },
+                    { id: "AH-04", name: "49. Group Anagrams", status: "Attempted", difficulty: "medium" },
+                    { id: "AH-05", name: "347. Top K Frequent Elements", status: "Medium", difficulty: "medium" },
+                    { id: "AH-06", name: "128. Longest Consecutive Sequence", status: "Hard", difficulty: "hard" },
+                    ...Array.from({ length: 14 }, (_, i) => ({ id: `AH-${7 + i}`, name: `Placeholder Problem ${7 + i}`, status: 'Not Started', difficulty: 'medium' }))
+                ]
+            },
+            "Two Pointers": {
+                problems: [
+                    { id: "TP-01", name: "125. Valid Palindrome", status: "Solved", difficulty: "easy" },
+                    { id: "TP-02", name: "167. Two Sum II", status: "Solved", difficulty: "medium" },
+                    { id: "TP-03", name: "15. 3Sum", status: "Attempted", difficulty: "medium" },
+                    { id: "TP-04", name: "42. Trapping Rain Water", status: "Solved", difficulty: "hard" },
+                    ...Array.from({ length: 16 }, (_, i) => ({ id: `TP-${5 + i}`, name: `Placeholder Problem ${5 + i}`, status: 'Not Started', difficulty: 'medium' }))
+                ]
+            },
+            "Sliding Window": {
+                problems: [
+                    { id: "SW-01", name: "121. Best Time to Buy and Sell Stock", status: "Solved", difficulty: "easy" },
+                    { id: "SW-02", name: "3. Longest Substring Without Repeating Characters", status: "Attempted", difficulty: "medium" },
+                     ...Array.from({ length: 18 }, (_, i) => ({ id: `SW-${3 + i}`, name: `Placeholder Problem ${3 + i}`, status: 'Not Started', difficulty: 'hard' }))
+                ]
+            },
+            "Stack": {
+                problems: [
+                    { id: "ST-01", name: "20. Valid Parentheses", status: "Solved", difficulty: "easy" },
+                    ...Array.from({ length: 19 }, (_, i) => ({ id: `ST-${2 + i}`, name: `Placeholder Problem ${2 + i}`, status: 'Not Started', difficulty: 'easy' }))
+                ]
+            },
+            "Binary Search": {
+                 problems: [
+                    { id: "BS-01", name: "704. Binary Search", status: "Solved", difficulty: "easy" },
+                    { id: "BS-02", name: "74. Search a 2D Matrix", status: "Solved", difficulty: "medium" },
+                    { id: "BS-03", name: "4. Median of Two Sorted Arrays", status: "Solved", difficulty: "hard" },
+                    ...Array.from({ length: 17 }, (_, i) => ({ id: `BS-${4 + i}`, name: `Placeholder Problem ${4 + i}`, status: 'Not Started', difficulty: 'medium' }))
+                ]
+            },
+            "Dynamic Programming": {
+                 problems: [
+                    { id: "DP-01", name: "70. Climbing Stairs", status: "Easy", difficulty: "easy" },
+                    { id: "DP-02", name: "322. Coin Change", status: "Medium", difficulty: "medium" },
+                    ...Array.from({ length: 18 }, (_, i) => ({ id: `DP-${3 + i}`, name: `Placeholder Problem ${3 + i}`, status: 'Not Started', difficulty: 'hard' }))
+                ]
+            },
+            "Graphs": {
+                 problems: [
+                    { id: "GR-01", name: "200. Number of Islands", status: "Medium", difficulty: "medium" },
+                    ...Array.from({ length: 19 }, (_, i) => ({ id: `GR-${2 + i}`, name: `Placeholder Problem ${2 + i}`, status: 'Not Started', difficulty: 'medium' }))
+                ]
+            }
+        };
+        const timerStates = {};
+
+        const patternsList = document.getElementById('patterns-list');
+        let activeQuestionList = null;
+
+        // --- FIXED: Re-added this function for positional coloring ---
+        function getColorForPercentage(pct) {
+            const percentColors = [{ pct: 0.0, color: { r: 0x4a, g: 0xcf, b: 0x4a } }, { pct: 0.5, color: { r: 0xff, g: 0xbf, b: 0x00 } }, { pct: 1.0, color: { r: 0xf9, g: 0x4d, b: 0x4d } }];
+            for (var i = 1; i < percentColors.length - 1; i++) { if (pct < percentColors[i].pct) break; }
+            const lower = percentColors[i - 1], upper = percentColors[i], range = upper.pct - lower.pct, rangePct = (pct - lower.pct) / range, pctLower = 1 - rangePct, pctUpper = rangePct;
+            const color = { r: Math.floor(lower.color.r * pctLower + upper.color.r * pctUpper), g: Math.floor(lower.color.g * pctLower + upper.color.g * pctUpper), b: Math.floor(lower.color.b * pctLower + upper.color.b * pctUpper) };
+            return `rgb(${color.r}, ${color.g}, ${color.b})`;
+        }
+
+        function renderPatterns() {
+            patternsList.innerHTML = '';
+            for (const patternName in mockData) {
+                const patternData = mockData[patternName];
+                const allProblems = patternData.problems;
+                const totalProblems = allProblems.length;
+                const totalSolved = allProblems.filter(p => p.status === 'Solved').length;
+
+                const patternContainer = document.createElement('div');
+                patternContainer.className = 'py-6 first:pt-0 last:pb-0';
+                const mainRow = document.createElement('div');
+                mainRow.className = 'flex items-center justify-between';
+                const leftSection = document.createElement('div');
+                leftSection.className = 'flex items-center';
+                const initial = document.createElement('div');
+                initial.className = 'text-2xl font-bold text-gray-600 mr-4 w-8 text-center';
+                initial.textContent = patternName.charAt(0);
+                leftSection.appendChild(initial);
+                const nameAndBar = document.createElement('div');
+                const title = document.createElement('h3');
+                title.className = 'text-lg font-semibold text-white mb-2';
+                title.textContent = patternName;
+                nameAndBar.appendChild(title);
+
+                const bar = document.createElement('div');
+                bar.className = 'flex gap-1.5 w-[400px]';
+                
+                allProblems.forEach((problem, index) => {
+                    const segment = document.createElement('div');
+                    segment.className = 'pattern-bar-segment cursor-pointer';
+                    segment.dataset.pattern = patternName;
+                    segment.dataset.problemId = problem.id;
+                    // --- FIXED: Color is now based on index, not problem difficulty ---
+                    segment.style.backgroundColor = problem.status === 'Solved' ? getColorForPercentage(index / 19) : '#2d2d2d';
+                    segment.addEventListener('click', handleSegmentClick);
+                    bar.appendChild(segment);
+                });
+                
+                nameAndBar.appendChild(bar);
+                leftSection.appendChild(nameAndBar);
+                mainRow.appendChild(leftSection);
+                const stats = document.createElement('div');
+                stats.className = 'text-md font-medium text-gray-400';
+                stats.textContent = `Solved ${totalSolved}/${totalProblems}`;
+                mainRow.appendChild(stats);
+                patternContainer.appendChild(mainRow);
+                const questionsContainer = document.createElement('div');
+                questionsContainer.className = 'questions-container pl-12';
+                patternContainer.appendChild(questionsContainer);
+                patternsList.appendChild(patternContainer);
+            }
+        }
+        
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function renderQuestions(pattern, problemId, container) {
+            container.innerHTML = '';
+            const question = mockData[pattern].problems.find(p => p.id === problemId);
+
+            if (!question) {
+                container.innerHTML = `<div class="text-gray-500 italic py-4">Question not found.</div>`;
+                return;
+            }
+
+            const questionList = document.createElement('div');
+            questionList.className = 'space-y-3 pt-4';
+            
+            if (!timerStates[question.id]) {
+                timerStates[question.id] = { elapsedTime: 0, isRunning: false, intervalId: null, startTime: 0 };
+            }
+            const state = timerStates[question.id];
+
+            const item = document.createElement('div');
+            item.className = 'flex justify-between items-center bg-[#2d2d2d] p-3 rounded-lg';
+            
+            const questionInfo = document.createElement('div');
+            questionInfo.innerHTML = `<span class="text-gray-500 mr-3 font-mono text-sm">${question.id}</span><span class="text-white">${question.name}</span>`;
+
+            const controls = document.createElement('div');
+            controls.className = 'flex items-center gap-3';
+            
+            const solveButtonHTML = question.status !== 'Solved' 
+                ? `<button class="btn-solve" data-action="solve" data-id="${question.id}" data-pattern="${pattern}">Mark Solved</button>` 
+                : '';
+
+            controls.innerHTML = `
+                ${solveButtonHTML}
+                <span class="timer-display font-mono text-sm text-gray-400" data-timer-id="${question.id}">${formatTime(state.elapsedTime)}</span>
+                <div class="flex items-center gap-2">
+                    <button class="timer-btn timer-btn-start" data-action="start" data-id="${question.id}" ${state.isRunning ? 'style="display:none;"' : ''}>Start</button>
+                    <button class="timer-btn timer-btn-stop" data-action="stop" data-id="${question.id}" ${!state.isRunning ? 'style="display:none;"' : ''}>Stop</button>
+                    <button class="timer-btn timer-btn-end" data-action="end" data-id="${question.id}" ${state.elapsedTime === 0 && !state.isRunning ? 'style="display:none;"' : ''}>End Session</button>
+                </div>
+                <div class="status-tag tag-${question.status.toLowerCase().replace(' ', '-')}">${question.status}</div>
+            `;
+            
+            item.appendChild(questionInfo);
+            item.appendChild(controls);
+            questionList.appendChild(item);
+            container.appendChild(questionList);
+        }
+
+        function handleQuestionAction(e) {
+            if (!e.target.dataset.action) return;
+            
+            const { action, id, pattern } = e.target.dataset;
+            const state = timerStates[id];
+            const controlsContainer = e.target.closest('.flex.items-center.gap-2');
+            
+            if (action === 'start' || action === 'stop' || action === 'end') {
+                const startBtn = controlsContainer.querySelector('[data-action="start"]');
+                const stopBtn = controlsContainer.querySelector('[data-action="stop"]');
+                const endBtn = controlsContainer.querySelector('[data-action="end"]');
+                const timerDisplay = document.querySelector(`[data-timer-id="${id}"]`);
+
+                if (action === 'start') {
+                    state.isRunning = true;
+                    state.startTime = Date.now();
+                    startBtn.style.display = 'none';
+                    stopBtn.style.display = 'block';
+                    endBtn.style.display = 'block';
+                    state.intervalId = setInterval(() => {
+                        const currentTime = Date.now();
+                        const sessionTime = currentTime - state.startTime;
+                        timerDisplay.textContent = formatTime(state.elapsedTime + sessionTime);
+                    }, 1000);
+                } else if (action === 'stop') {
+                    state.isRunning = false;
+                    clearInterval(state.intervalId);
+                    state.elapsedTime += Date.now() - state.startTime;
+                    stopBtn.style.display = 'none';
+                    startBtn.style.display = 'block';
+                    startBtn.textContent = 'Resume';
+                } else if (action === 'end') {
+                    state.isRunning = false;
+                    clearInterval(state.intervalId);
+                    if (state.startTime > 0) {
+                        state.elapsedTime += Date.now() - state.startTime;
+                    }
+                    console.log(`Session for ${id} ended. Total time: ${formatTime(state.elapsedTime)}`);
+                    state.elapsedTime = 0;
+                    state.startTime = 0;
+                    timerDisplay.textContent = formatTime(0);
+                    startBtn.textContent = 'Start';
+                    startBtn.style.display = 'block';
+                    stopBtn.style.display = 'none';
+                    endBtn.style.display = 'none';
+                }
+            } else if (action === 'solve') {
+                mockData[pattern].problems.forEach(problem => {
+                    if (problem.id === id) {
+                        problem.status = 'Solved';
+                    }
+                });
+                renderPatterns();
+                if (activeQuestionList) {
+                    renderQuestions(pattern, id, activeQuestionList);
+                }
+            }
+        }
+        document.getElementById('patterns-list').addEventListener('click', handleQuestionAction);
+
+        function handleSegmentClick(event) {
+            if (event.target.dataset.action) return;
+            const clickedSegment = event.target;
+            const { pattern, problemId } = clickedSegment.dataset;
+            const patternContainer = clickedSegment.closest('.py-6');
+            const questionsContainer = patternContainer.querySelector('.questions-container');
+            const barContainer = clickedSegment.parentElement;
+            const isAlreadyOpen = clickedSegment.classList.contains('expanded');
+
+            barContainer.querySelectorAll('.pattern-bar-segment').forEach(seg => seg.classList.remove('expanded'));
+            
+            if (activeQuestionList && activeQuestionList !== questionsContainer) {
+                activeQuestionList.classList.remove('open');
+            }
+            
+            if (isAlreadyOpen) {
+                questionsContainer.classList.remove('open');
+                activeQuestionList = null;
+            } else {
+                clickedSegment.classList.add('expanded');
+                renderQuestions(pattern, problemId, questionsContainer);
+                questionsContainer.classList.add('open');
+                activeQuestionList = questionsContainer;
+            }
+        }
+
+        const calendarContainer = document.getElementById('calendar-container');
+        const dailyAnalysisView = document.getElementById('daily-analysis-view');
+        let donutChartInstance = null;
+
+        function renderDailyAnalysis(date, activityData) {
+            dailyAnalysisView.innerHTML = `<div class="flex justify-between items-center mb-6"><div><h2 class="text-2xl font-bold text-white">Daily Analysis</h2><p class="text-gray-400">${date.toDateString()}</p></div><button id="back-to-calendar" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Back to Calendar</button></div><div class="bg-[#2a2a2a] p-6 rounded-xl"><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-[#1c1c1c] p-4 rounded-lg text-center"><p class="text-sm text-gray-400">Total Time</p><p class="text-2xl font-bold">${formatTime(activityData.totalTime)}</p></div><div class="bg-[#1c1c1c] p-4 rounded-lg text-center"><p class="text-sm text-gray-400">Problems Solved</p><p class="text-2xl font-bold">${activityData.problemsSolved}</p></div><div class="bg-[#1c1c1c] p-4 rounded-lg text-center"><p class="text-sm text-gray-400">Difficulty</p><p class="text-lg font-bold">${activityData.difficultyBreakdown}</p></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="md:col-span-2"><h3 class="font-semibold text-white mb-4">Session Timeline</h3><div class="space-y-3">${activityData.timelineHTML}</div></div><div><h3 class="font-semibold text-white mb-4 text-center">Pattern Focus</h3><canvas id="patternFocusChart"></canvas></div></div></div>`;
+            document.getElementById('back-to-calendar').addEventListener('click', showCalendarView);
+            const ctx = document.getElementById('patternFocusChart').getContext('2d');
+            if (donutChartInstance) donutChartInstance.destroy();
+            donutChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(activityData.patternFocus), datasets: [{ data: Object.values(activityData.patternFocus), backgroundColor: ['#4acf4a', '#ffbf00', '#f94d4d', '#4a90e2', '#a07ee8', '#e87e5a', '#7ee8d1'], borderColor: '#2a2a2a', borderWidth: 4 }] }, options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#e0e0e0' } } } } });
+        }
+
+        function showDailyAnalysis(date) {
+            const mockDailyData = { totalTime: 9910000, problemsSolved: 3, difficultyBreakdown: "1 Easy, 2 Medium", timelineHTML: `<div class="bg-[#1c1c1c] p-3 rounded-lg"><p class="font-semibold">10:15 AM - Two Pointers (TP-M01)</p><p class="text-sm text-gray-400">Time: 00:25:30 | Status: Solved</p></div><div class="bg-[#1c1c1c] p-3 rounded-lg"><p class="font-semibold">11:00 AM - Arrays & Hashing (AH-M01)</p><p class="text-sm text-gray-400">Time: 01:10:05 | Status: Attempted</p></div><div class="bg-[#1c1c1c] p-3 rounded-lg"><p class="font-semibold">02:30 PM - Stack (ST-E01)</p><p class="text-sm text-gray-400">Time: 00:09:35 | Status: Solved</p></div>`, patternFocus: { "Arrays & Hashing": 55, "Two Pointers": 30, "Stack": 15 } };
+            calendarContainer.classList.add('hidden');
+            dailyAnalysisView.classList.remove('hidden');
+            renderDailyAnalysis(date, mockDailyData);
+        }
+
+        function showCalendarView() {
+            dailyAnalysisView.classList.add('hidden');
+            calendarContainer.classList.remove('hidden');
+        }
+
+        function renderCalendar() {
+            const calendarView = document.getElementById('calendar-view-content');
+            const tooltip = document.getElementById('tooltip');
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const daysToShow = 182;
+            let calendarHTML = `<div id="month-labels-container" class="flex text-xs text-gray-400 mb-2"></div><div class="calendar-scroll-container"><div class="calendar-grid"></div></div><div class="flex justify-between items-center mt-3 text-xs text-gray-500"><span>Problems per day</span><div class="flex items-center gap-1"><span>0</span><div class="w-3 h-3 rounded-sm bg-[#0e4429]"></div><div class="w-3 h-3 rounded-sm bg-[#006d32]"></div><div class="w-3 h-3 rounded-sm bg-[#26a641]"></div><div class="w-3 h-3 rounded-sm bg-[#39d353]"></div><span>5+</span></div></div>`;
+            calendarView.innerHTML = calendarHTML;
+            const grid = calendarView.querySelector('.calendar-grid');
+            const monthLabelsContainer = calendarView.querySelector('#month-labels-container');
+            const activityLevels = ['#0e4429', '#006d32', '#26a641', '#39d353'];
+            const counts = [1, 3, 5, 6];
+            const today = new Date();
+            const startDate = new Date();
+            startDate.setDate(today.getDate() - daysToShow);
+            startDate.setDate(startDate.getDate() - startDate.getDay());
+            let monthLabelHTML = '';
+            let lastMonth = -1;
+            let monthColCount = 0;
+            const totalDays = daysToShow + today.getDay() + 1;
+            for (let i = 0; i <= totalDays; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                if (currentDate.getDay() === 0) {
+                    if (currentDate.getMonth() !== lastMonth) {
+                        if(lastMonth !== -1) {
+                             monthLabelHTML += `<span style="width: ${monthColCount * 20}px" class="text-left">${monthNames[lastMonth]}</span>`;
+                        }
+                        lastMonth = currentDate.getMonth();
+                        monthColCount = 0;
+                    }
+                    monthColCount++;
+                }
+                const day = document.createElement('div');
+                day.className = 'calendar-day';
+                if (Math.random() > 0.4) {
+                    const level = Math.floor(Math.random() * activityLevels.length);
+                    day.style.backgroundColor = activityLevels[level];
+                    day.dataset.count = counts[level];
+                    day.addEventListener('click', () => showDailyAnalysis(currentDate));
+                } else {
+                    day.dataset.count = 0;
+                }
+                day.addEventListener('mouseenter', (e) => {
+                    tooltip.style.display = 'block';
+                    tooltip.textContent = `${e.target.dataset.count} problems on ${currentDate.toDateString()}`;
+                });
+                day.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+                day.addEventListener('mousemove', (e) => {
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY + 10}px`;
+                });
+                grid.appendChild(day);
+            }
+            monthLabelHTML += `<span style="width: ${monthColCount * 20}px" class="text-left">${monthNames[lastMonth]}</span>`;
+            monthLabelsContainer.innerHTML = monthLabelHTML;
+            const slider = calendarView.querySelector('.calendar-scroll-container');
+            let isDown = false, startX, scrollLeft;
+            slider.addEventListener('mousedown', (e) => { isDown = true; slider.classList.add('grabbing'); startX = e.pageX - slider.offsetLeft; scrollLeft = slider.scrollLeft; });
+            slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('grabbing'); });
+            slider.addEventListener('mouseup', () => { isDown = false; slider.classList.remove('grabbing'); });
+            slider.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - slider.offsetLeft; const walk = (x - startX) * 2; slider.scrollLeft = scrollLeft - walk; });
+            slider.scrollLeft = slider.scrollWidth;
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPatterns();
+            renderCalendar();
+        });
+    </script>
+</body>
+</html>

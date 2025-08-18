@@ -2,8 +2,25 @@ import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import * as path from 'path';
 import * as fs from 'fs';
-import { parseProblemPath, ProblemInfo } from './lib/problemPath';
+import { ProblemInfo } from './lib/problemPath';
 import { buildDashboardHtml } from './webview/html';
+import { CatalogService } from './services/catalog';
+
+// Catalog types
+type DifficultyBand = 1 | 2 | 3 | 4 | 5;
+
+interface CatalogProblem {
+  pattern: string;   // 'arrays-and-hashing'
+  title: string;     // 'Two Sum'
+  slug: string;      // 'two-sum'
+  band: DifficultyBand;
+  url: string;       // canonical link (e.g., leetcode problem page)
+}
+
+interface Catalog {
+  version: string;                // '1'
+  problems: CatalogProblem[];     // ~20 per pattern
+}
 
 interface SolvedInfo {
   solvedAt: string; // ISO string
@@ -48,8 +65,11 @@ export function activate(context: vscode.ExtensionContext) {
     context.globalState.update('installedAt', installedAt);
   }
 
+  // Initialize catalog service
+  const catalogService = new CatalogService(context);
+
   // Create dashboard provider
-  const dashboardProvider = new DashboardProvider(context, installedAt);
+  const dashboardProvider = new DashboardProvider(context, installedAt, catalogService);
   
   // Register webview provider
   context.subscriptions.push(
@@ -104,45 +124,44 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('codequest.newProblem', async () => {
       await dashboardProvider.handleNewProblem();
-    })
-  );
+    }),
 
-  // Listen for workspace folder changes
-  context.subscriptions.push(
-    vscode.workspace.onDidChangeWorkspaceFolders(() => {
-      dashboardProvider.handleWorkspaceChange();
-    })
-  );
-
-  // Listen for active editor changes
-  context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor((editor: vscode.TextEditor | undefined) => {
-      dashboardProvider.updateCurrentProblem(editor?.document.uri.fsPath);
-    })
-  );
-
-  // Listen for document saves to update current problem
-  context.subscriptions.push(
-    vscode.workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
-      if (document.uri.fsPath.endsWith('homework.js')) {
-        dashboardProvider.updateCurrentProblem(document.uri.fsPath);
+    vscode.commands.registerCommand('codequest.buildCatalog', async () => {
+      try {
+        await catalogService.buildCatalog();
+        vscode.window.showInformationMessage('Catalog built successfully!');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        vscode.window.showErrorMessage(`Failed to build catalog: ${errorMessage}`);
       }
+    }),
+
+    vscode.commands.registerCommand('codequest.refreshCatalog', async () => {
+      try {
+        await catalogService.refreshCatalog();
+        vscode.window.showInformationMessage('Catalog refreshed successfully!');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        vscode.window.showErrorMessage(`Failed to refresh catalog: ${errorMessage}`);
+      }
+    }),
+
+    vscode.commands.registerCommand('codequest.updateExtension', async () => {
+      const terminal = vscode.window.createTerminal('CodeQuest Update');
+      terminal.show();
+      
+      // Run the complete update process
+      terminal.sendText('cd "' + context.extensionPath + '"');
+      terminal.sendText('npm run compile');
+      terminal.sendText('vsce package --out codequest-coach-0.1.0.vsix --allow-missing-repository');
+      terminal.sendText('code --uninstall-extension you.codequest-coach');
+      terminal.sendText('code --install-extension codequest-coach-0.1.0.vsix');
+      
+      vscode.window.showInformationMessage('Extension update process started in terminal. Reload VS Code after completion.');
     })
   );
 
-  // Create file system watcher for homework.js files
-  const watcher = vscode.workspace.createFileSystemWatcher('**/patterns/**/homework.js');
-  
-  context.subscriptions.push(
-    watcher,
-    watcher.onDidCreate(() => dashboardProvider.refreshProblemCount()),
-    watcher.onDidDelete(() => dashboardProvider.refreshProblemCount()),
-    watcher.onDidChange(() => dashboardProvider.refreshProblemCount()),
-    { dispose: () => dashboardProvider.dispose() }
-  );
-
-  // Initial scan and setup
-  dashboardProvider.performInitialScan();
+  // No longer need workspace scanning or file watching since we use catalog-based system
   
   console.log('CodeQuest Coach extension activated successfully');
 }
@@ -150,11 +169,11 @@ export function activate(context: vscode.ExtensionContext) {
 class DashboardProvider implements vscode.WebviewViewProvider {
   private webview: vscode.Webview | undefined;
   private state: ExtensionState;
-  private refreshDebounce?: NodeJS.Timeout;
 
   constructor(
     private context: vscode.ExtensionContext,
-    private installedAt: string
+    private installedAt: string,
+    private catalogService: CatalogService
   ) {
     this.state = {
       workspacePath: this.getWorkspacePath(),
@@ -285,6 +304,7 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   }
 
   public resolveWebviewView(webviewView: vscode.WebviewView): void {
+    this.webviewView = webviewView; // Store reference for catalog messaging
     this.webview = webviewView.webview;
 
     webviewView.webview.options = {
@@ -300,8 +320,18 @@ class DashboardProvider implements vscode.WebviewViewProvider {
         case 'getInitialState':
           this.sendStateUpdate();
           break;
+        case 'codequest.getCatalog':
+          this.handleGetCatalog();
+          break;
+        case 'codequest.createFromCatalog':
+          this.handleCreateFromCatalog(message.pattern, message.slug);
+          break;
+        case 'codequest.openOrCreateProblem':
+          this.handleOpenOrCreateProblem(message.pattern, message.slug);
+          break;
         case 'codequest.startSession':
         case 'codequest.endSession':
+        case 'codequest.pauseSession':
         case 'codequest.importLegacy':
           vscode.commands.executeCommand(message.command);
           break;
@@ -318,7 +348,7 @@ class DashboardProvider implements vscode.WebviewViewProvider {
           this.handleOpenProblem(message.key);
           break;
         case 'codequest.refreshProblems':
-          this.handleRefreshProblems();
+          // Legacy command removed - no longer refreshing workspace scans
           break;
         case 'codequest.setFilter':
           this.state.filter = message.filter;
@@ -328,41 +358,15 @@ class DashboardProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  public async performInitialScan(): Promise<void> {
-    this.state.problems = await this.scanWorkspaceList();
-    this.state.problemCount = this.state.problems.length;
-    this.state.patternStats = this.computePatternStats();
-    this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
-  }
-
-  public async refreshProblemCount(): Promise<void> {
-    if (this.refreshDebounce) {
-      clearTimeout(this.refreshDebounce);
-    }
-    
-    this.refreshDebounce = setTimeout(async () => {
-      this.state.problems = await this.scanWorkspaceList();
-      this.state.problemCount = this.state.problems.length;
-      this.state.patternStats = this.computePatternStats();
-      this.sendStateUpdate();
-    }, 200);
-  }
-
-  public updateCurrentProblem(filePath?: string): void {
-    this.state.currentProblem = parseProblemPath(filePath);
-    this.sendStateUpdate();
-  }
+  // Scanning methods removed - now using catalog-based content generation
 
   public dispose(): void {
-    if (this.refreshDebounce) {
-      clearTimeout(this.refreshDebounce);
-      this.refreshDebounce = undefined;
-    }
+    // Cleanup method simplified - no more debounce timers
   }
 
   public handleWorkspaceChange(): void {
     this.state.workspacePath = this.getWorkspacePath();
-    this.refreshProblemCount();
+    // No longer need to refresh problem count - using catalog system
   }
 
   public handleCommand(message: string): void {
@@ -450,8 +454,7 @@ module.exports = solve;
       const uri = vscode.Uri.file(filePath);
       await vscode.window.showTextDocument(uri);
 
-      // Refresh state
-      await this.handleRefreshProblems();
+      // No longer need to refresh state - using catalog system
 
       this.handleCommand(`New problem created: ${problemName}`);
     } catch (error) {
@@ -478,10 +481,129 @@ module.exports = solve;
   }
 
   public async handleRefreshProblems(): Promise<void> {
-    this.state.problems = await this.scanWorkspaceList();
-    this.state.problemCount = this.state.problems.length;
+    // No longer scan workspace - using catalog system
+    this.state.problems = [];
+    this.state.problemCount = 0;
     this.state.patternStats = this.computePatternStats();
     this.sendStateUpdate();
+  }
+
+  public async handleGetCatalog(): Promise<void> {
+    try {
+      const catalog = await this.catalogService.getCatalog();
+      
+      this.webviewView?.webview.postMessage({
+        command: 'catalogData',
+        data: catalog
+      });
+    } catch (error) {
+      console.error('Failed to load catalog:', error);
+      vscode.window.showErrorMessage('Failed to load problem catalog');
+    }
+  }
+
+  public async handleOpenOrCreateProblem(pattern: string, slug: string): Promise<void> {
+    try {
+      const workspaceFolder = this.getWorkspaceFolder();
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder open');
+        return;
+      }
+
+      // Look for existing problem files first
+      const patternsDir = path.join(workspaceFolder, 'patterns', pattern);
+      if (fs.existsSync(patternsDir)) {
+        const problemDirs = fs.readdirSync(patternsDir)
+          .filter(dir => dir.includes(slug))
+          .filter(dir => fs.statSync(path.join(patternsDir, dir)).isDirectory());
+        
+        if (problemDirs.length > 0) {
+          // Found existing problem, open the most recent one
+          const problemDir = problemDirs.sort().pop(); // Get most recent
+          const problemPath = path.join(patternsDir, problemDir!);
+          
+          // Look for homework.js in date subdirectories
+          const dateDirs = fs.readdirSync(problemPath)
+            .filter(dir => fs.statSync(path.join(problemPath, dir)).isDirectory())
+            .sort()
+            .reverse(); // Most recent first
+          
+          for (const dateDir of dateDirs) {
+            const filePath = path.join(problemPath, dateDir, 'homework.js');
+            if (fs.existsSync(filePath)) {
+              // Open existing file
+              const document = await vscode.workspace.openTextDocument(filePath);
+              await vscode.window.showTextDocument(document);
+              return;
+            }
+          }
+        }
+      }
+
+      // No existing file found, create new one
+      await this.handleCreateFromCatalog(pattern, slug);
+    } catch (error) {
+      console.error('Failed to open or create problem:', error);
+      vscode.window.showErrorMessage('Failed to open or create problem');
+    }
+  }
+
+  public async handleCreateFromCatalog(pattern: string, slug: string): Promise<void> {
+    try {
+      const catalogData = await this.catalogService.getCatalog();
+      const problem = catalogData[pattern]?.[1]?.find(p => p.slug === slug) ||
+                     catalogData[pattern]?.[2]?.find(p => p.slug === slug) ||
+                     catalogData[pattern]?.[3]?.find(p => p.slug === slug) ||
+                     catalogData[pattern]?.[4]?.find(p => p.slug === slug) ||
+                     catalogData[pattern]?.[5]?.find(p => p.slug === slug);
+      
+      if (!problem) {
+        vscode.window.showErrorMessage('Problem not found in catalog');
+        return;
+      }
+
+      const workspaceFolder = this.getWorkspaceFolder();
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder open');
+        return;
+      }
+
+      // Generate file path
+      const patternName = this.formatPatternName(pattern);
+      const problemNumber = await this.getNextProblemNumber(pattern);
+      const date = new Date().toISOString().split('T')[0];
+      const problemDir = `problem-${problemNumber.toString().padStart(3, '0')}-${slug}`;
+      
+      const filePath = path.join(
+        workspaceFolder,
+        'patterns',
+        pattern,
+        problemDir,
+        date,
+        'homework.js'
+      );
+
+      // Ensure directory exists
+      const dirPath = path.dirname(filePath);
+      fs.mkdirSync(dirPath, { recursive: true });
+
+      // Generate stub content
+      const stub = this.generateProblemStub(problem, problemNumber, date);
+      
+      // Write file
+      fs.writeFileSync(filePath, stub);
+      
+      // Open in editor
+      const document = await vscode.workspace.openTextDocument(filePath);
+      await vscode.window.showTextDocument(document);
+      
+      // No longer need to refresh problem count - using catalog system
+      
+      vscode.window.showInformationMessage(`Created: ${problem.title}`);
+    } catch (error) {
+      console.error('Failed to create problem from catalog:', error);
+      vscode.window.showErrorMessage('Failed to create problem file');
+    }
   }
 
   public async handleMarkSolved(): Promise<void> {
@@ -686,12 +808,14 @@ module.exports = solve;
 
     // Re-compute live state
     this.state.workspacePath = this.getWorkspacePath();
-    this.state.problems = await this.scanWorkspaceList();
-    this.state.problemCount = this.state.problems.length;
+    // No longer scan workspace - using catalog system
+    this.state.problems = []; // Clear problems array since we use catalog now
+    this.state.problemCount = 0;
     this.state.patternStats = this.computePatternStats();
-    this.updateCurrentProblem(vscode.window.activeTextEditor?.document.uri.fsPath);
+    // No longer update current problem - workspace detection removed
 
-    // Clear preview mode (updateCurrentProblem already sent updateState)
+    // Send state update and clear preview mode
+    this.sendStateUpdate();
     this.webview.postMessage({
       type: 'setPreviewMode',
       data: { enabled: false, label: '' }
@@ -705,39 +829,7 @@ module.exports = solve;
     return workspaceFolder ? workspaceFolder.uri.fsPath : 'No folder open';
   }
 
-  private async scanWorkspaceList(): Promise<ProblemInfo[]> {
-    try {
-      const files = await vscode.workspace.findFiles('patterns/**/homework.js');
-      const problems: ProblemInfo[] = [];
-
-      for (const file of files) {
-        const problemInfo = parseProblemPath(file.fsPath);
-        if (problemInfo) {
-          problems.push(problemInfo);
-        }
-      }
-
-      // Sort: pattern (A→Z) → Number (desc numeric) → date (desc)
-      problems.sort((a, b) => {
-        // First by pattern name
-        const patternCompare = a.pattern.localeCompare(b.pattern);
-        if (patternCompare !== 0) return patternCompare;
-
-        // Then by number (descending numeric)
-        const numA = parseInt(a.number, 10);
-        const numB = parseInt(b.number, 10);
-        if (numA !== numB) return numB - numA;
-
-        // Finally by date (descending)
-        return b.date.localeCompare(a.date);
-      });
-
-      return problems;
-    } catch (error) {
-      console.error('Error scanning workspace problem list:', error);
-      return [];
-    }
-  }
+  // Removed scanWorkspaceList method - no longer needed with catalog system
 
   private sendStateUpdate(): void {
     if (this.webview) {
@@ -769,6 +861,47 @@ module.exports = solve;
       nonce
     });
   }
+
+  private getWorkspaceFolder(): string | undefined {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    return workspaceFolders && workspaceFolders.length > 0 
+      ? workspaceFolders[0].uri.fsPath 
+      : undefined;
+  }
+
+  private formatPatternName(pattern: string): string {
+    return pattern.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  }
+
+  private generateProblemStub(problem: CatalogProblem, problemNumber: number, date: string): string {
+    const bandNames = {
+      1: 'Very Easy',
+      2: 'Easy', 
+      3: 'Medium',
+      4: 'Hard',
+      5: 'Very Hard'
+    };
+
+    const patternName = this.formatPatternName(problem.pattern);
+    const bandName = bandNames[problem.band];
+
+    return `// Pattern: ${patternName} | Problem ${problemNumber.toString().padStart(3, '0')} — ${problem.title} | ${date}
+// Difficulty: ${bandName} (Band ${problem.band})
+// Source: ${problem.url}
+// Notes: Read problem statement at the URL above.
+// TODO: Outline approach, time/space, and tests.
+
+function solve(/* input */) {
+  // your code here
+}
+
+module.exports = solve;
+`;
+  }
+
+  private webviewView: vscode.WebviewView | undefined;
 }
 
 export function deactivate() {

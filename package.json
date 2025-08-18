@@ -70,8 +70,55 @@
       {
         "command": "codequest.openNextUnsolved",
         "title": "CodeQuest: Open Next Unsolved Problem"
+      },
+      {
+        "command": "codequest.buildCatalog",
+        "title": "CodeQuest: Build Catalog (LeetCode Metadata)"
+      },
+      {
+        "command": "codequest.refreshCatalog",
+        "title": "CodeQuest: Refresh Catalog"
+      },
+      {
+        "command": "codequest.updateExtension",
+        "title": "CodeQuest: Update Extension (Dev)"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "CodeQuest Coach",
+      "properties": {
+        "codequest.catalog.source": {
+          "type": "string",
+          "enum": ["cache", "bundled"],
+          "default": "cache",
+          "description": "Source for problem catalog: cache (from indexer) or bundled (static)"
+        },
+        "codequest.indexer.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable LeetCode metadata indexing (requires consent)"
+        },
+        "codequest.indexer.throttleMs": {
+          "type": "number",
+          "default": 750,
+          "minimum": 100,
+          "maximum": 5000,
+          "description": "Throttle delay between API requests in milliseconds"
+        },
+        "codequest.pattern.questionsPerPattern": {
+          "type": "number",
+          "enum": [20, 40, 60, 100],
+          "default": 20,
+          "description": "Number of segments per pattern bar"
+        },
+        "codequest.generate.language": {
+          "type": "string",
+          "enum": ["javascript"],
+          "default": "javascript",
+          "description": "Language for generated problem stubs"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs",

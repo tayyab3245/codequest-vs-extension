@@ -1,0 +1,13 @@
+.git
+.gitignore
+.vscode/**
+.vscode-test/**
+node_modules/**
+test/**
+src/**/*.test.ts
+.vscodeignore
+tsconfig.json
+**/*.ts
+!dist/**
+!media/**
+!assets/**

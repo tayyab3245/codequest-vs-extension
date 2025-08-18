@@ -1,0 +1,551 @@
+{
+  "version": "1",
+  "problems": [
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Contains Duplicate",
+      "slug": "contains-duplicate", 
+      "band": 1,
+      "url": "https://leetcode.com/problems/contains-duplicate/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Valid Anagram",
+      "slug": "valid-anagram",
+      "band": 1,
+      "url": "https://leetcode.com/problems/valid-anagram/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Two Sum",
+      "slug": "two-sum",
+      "band": 1,
+      "url": "https://leetcode.com/problems/two-sum/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Group Anagrams",
+      "slug": "group-anagrams",
+      "band": 2,
+      "url": "https://leetcode.com/problems/group-anagrams/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Top K Frequent Elements",
+      "slug": "top-k-frequent-elements",
+      "band": 2,
+      "url": "https://leetcode.com/problems/top-k-frequent-elements/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Product of Array Except Self",
+      "slug": "product-of-array-except-self",
+      "band": 2,
+      "url": "https://leetcode.com/problems/product-of-array-except-self/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Encode and Decode Strings",
+      "slug": "encode-and-decode-strings",
+      "band": 2,
+      "url": "https://leetcode.com/problems/encode-and-decode-strings/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Longest Consecutive Sequence",
+      "slug": "longest-consecutive-sequence",
+      "band": 3,
+      "url": "https://leetcode.com/problems/longest-consecutive-sequence/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "3Sum",
+      "slug": "3sum",
+      "band": 3,
+      "url": "https://leetcode.com/problems/3sum/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Container With Most Water",
+      "slug": "container-with-most-water",
+      "band": 3,
+      "url": "https://leetcode.com/problems/container-with-most-water/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Trapping Rain Water",
+      "slug": "trapping-rain-water",
+      "band": 4,
+      "url": "https://leetcode.com/problems/trapping-rain-water/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "4Sum",
+      "slug": "4sum",
+      "band": 4,
+      "url": "https://leetcode.com/problems/4sum/"
+    },
+    {
+      "pattern": "arrays-and-hashing",
+      "title": "Largest Rectangle in Histogram",
+      "slug": "largest-rectangle-in-histogram",
+      "band": 5,
+      "url": "https://leetcode.com/problems/largest-rectangle-in-histogram/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "Valid Palindrome",
+      "slug": "valid-palindrome",
+      "band": 1,
+      "url": "https://leetcode.com/problems/valid-palindrome/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "Two Sum II - Input Array Is Sorted",
+      "slug": "two-sum-ii-input-array-is-sorted",
+      "band": 1,
+      "url": "https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "Remove Duplicates from Sorted Array",
+      "slug": "remove-duplicates-from-sorted-array",
+      "band": 1,
+      "url": "https://leetcode.com/problems/remove-duplicates-from-sorted-array/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "3Sum",
+      "slug": "3sum",
+      "band": 2,
+      "url": "https://leetcode.com/problems/3sum/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "Container With Most Water",
+      "slug": "container-with-most-water",
+      "band": 2,
+      "url": "https://leetcode.com/problems/container-with-most-water/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "Sort Colors",
+      "slug": "sort-colors",
+      "band": 2,
+      "url": "https://leetcode.com/problems/sort-colors/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "Palindromic Substrings",
+      "slug": "palindromic-substrings",
+      "band": 3,
+      "url": "https://leetcode.com/problems/palindromic-substrings/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "4Sum",
+      "slug": "4sum",
+      "band": 3,
+      "url": "https://leetcode.com/problems/4sum/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "Trapping Rain Water",
+      "slug": "trapping-rain-water",
+      "band": 4,
+      "url": "https://leetcode.com/problems/trapping-rain-water/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "Minimum Window Substring",
+      "slug": "minimum-window-substring",
+      "band": 4,
+      "url": "https://leetcode.com/problems/minimum-window-substring/"
+    },
+    {
+      "pattern": "two-pointers",
+      "title": "Substring with Concatenation of All Words",
+      "slug": "substring-with-concatenation-of-all-words",
+      "band": 5,
+      "url": "https://leetcode.com/problems/substring-with-concatenation-of-all-words/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Best Time to Buy and Sell Stock",
+      "slug": "best-time-to-buy-and-sell-stock",
+      "band": 1,
+      "url": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Contains Duplicate II",
+      "slug": "contains-duplicate-ii",
+      "band": 1,
+      "url": "https://leetcode.com/problems/contains-duplicate-ii/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Longest Substring Without Repeating Characters",
+      "slug": "longest-substring-without-repeating-characters",
+      "band": 2,
+      "url": "https://leetcode.com/problems/longest-substring-without-repeating-characters/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Longest Repeating Character Replacement",
+      "slug": "longest-repeating-character-replacement",
+      "band": 2,
+      "url": "https://leetcode.com/problems/longest-repeating-character-replacement/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Permutation in String",
+      "slug": "permutation-in-string",
+      "band": 2,
+      "url": "https://leetcode.com/problems/permutation-in-string/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Find All Anagrams in a String",
+      "slug": "find-all-anagrams-in-a-string",
+      "band": 2,
+      "url": "https://leetcode.com/problems/find-all-anagrams-in-a-string/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Fruits Into Baskets",
+      "slug": "fruit-into-baskets",
+      "band": 3,
+      "url": "https://leetcode.com/problems/fruit-into-baskets/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Longest Substring with At Most K Distinct Characters",
+      "slug": "longest-substring-with-at-most-k-distinct-characters",
+      "band": 3,
+      "url": "https://leetcode.com/problems/longest-substring-with-at-most-k-distinct-characters/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Max Consecutive Ones III",
+      "slug": "max-consecutive-ones-iii",
+      "band": 3,
+      "url": "https://leetcode.com/problems/max-consecutive-ones-iii/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Minimum Window Substring",
+      "slug": "minimum-window-substring",
+      "band": 4,
+      "url": "https://leetcode.com/problems/minimum-window-substring/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Sliding Window Maximum",
+      "slug": "sliding-window-maximum",
+      "band": 4,
+      "url": "https://leetcode.com/problems/sliding-window-maximum/"
+    },
+    {
+      "pattern": "sliding-window",
+      "title": "Subarrays with K Different Integers",
+      "slug": "subarrays-with-k-different-integers",
+      "band": 5,
+      "url": "https://leetcode.com/problems/subarrays-with-k-different-integers/"
+    },
+    {
+      "pattern": "stack",
+      "title": "Valid Parentheses",
+      "slug": "valid-parentheses",
+      "band": 1,
+      "url": "https://leetcode.com/problems/valid-parentheses/"
+    },
+    {
+      "pattern": "stack",
+      "title": "Min Stack",
+      "slug": "min-stack",
+      "band": 1,
+      "url": "https://leetcode.com/problems/min-stack/"
+    },
+    {
+      "pattern": "stack",
+      "title": "Next Greater Element I",
+      "slug": "next-greater-element-i",
+      "band": 1,
+      "url": "https://leetcode.com/problems/next-greater-element-i/"
+    },
+    {
+      "pattern": "stack",
+      "title": "Evaluate Reverse Polish Notation",
+      "slug": "evaluate-reverse-polish-notation",
+      "band": 2,
+      "url": "https://leetcode.com/problems/evaluate-reverse-polish-notation/"
+    },
+    {
+      "pattern": "stack",
+      "title": "Generate Parentheses",
+      "slug": "generate-parentheses",
+      "band": 2,
+      "url": "https://leetcode.com/problems/generate-parentheses/"
+    },
+    {
+      "pattern": "stack",
+      "title": "Daily Temperatures",
+      "slug": "daily-temperatures",
+      "band": 2,
+      "url": "https://leetcode.com/problems/daily-temperatures/"
+    },
+    {
+      "pattern": "stack",
+      "title": "Car Fleet",
+      "slug": "car-fleet",
+      "band": 3,
+      "url": "https://leetcode.com/problems/car-fleet/"
+    },
+    {
+      "pattern": "stack",
+      "title": "Asteroid Collision",
+      "slug": "asteroid-collision",
+      "band": 3,
+      "url": "https://leetcode.com/problems/asteroid-collision/"
+    },
+    {
+      "pattern": "stack",
+      "title": "Largest Rectangle in Histogram",
+      "slug": "largest-rectangle-in-histogram",
+      "band": 4,
+      "url": "https://leetcode.com/problems/largest-rectangle-in-histogram/"
+    },
+    {
+      "pattern": "stack",
+      "title": "Maximal Rectangle",
+      "slug": "maximal-rectangle",
+      "band": 5,
+      "url": "https://leetcode.com/problems/maximal-rectangle/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Binary Search",
+      "slug": "binary-search",
+      "band": 1,
+      "url": "https://leetcode.com/problems/binary-search/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Search Insert Position",
+      "slug": "search-insert-position",
+      "band": 1,
+      "url": "https://leetcode.com/problems/search-insert-position/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "First Bad Version",
+      "slug": "first-bad-version",
+      "band": 1,
+      "url": "https://leetcode.com/problems/first-bad-version/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Search a 2D Matrix",
+      "slug": "search-a-2d-matrix",
+      "band": 2,
+      "url": "https://leetcode.com/problems/search-a-2d-matrix/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Koko Eating Bananas",
+      "slug": "koko-eating-bananas",
+      "band": 2,
+      "url": "https://leetcode.com/problems/koko-eating-bananas/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Find Minimum in Rotated Sorted Array",
+      "slug": "find-minimum-in-rotated-sorted-array",
+      "band": 2,
+      "url": "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Search in Rotated Sorted Array",
+      "slug": "search-in-rotated-sorted-array",
+      "band": 3,
+      "url": "https://leetcode.com/problems/search-in-rotated-sorted-array/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Time Based Key-Value Store",
+      "slug": "time-based-key-value-store",
+      "band": 3,
+      "url": "https://leetcode.com/problems/time-based-key-value-store/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Search a 2D Matrix II",
+      "slug": "search-a-2d-matrix-ii",
+      "band": 3,
+      "url": "https://leetcode.com/problems/search-a-2d-matrix-ii/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Find Peak Element",
+      "slug": "find-peak-element",
+      "band": 3,
+      "url": "https://leetcode.com/problems/find-peak-element/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Split Array Largest Sum",
+      "slug": "split-array-largest-sum",
+      "band": 4,
+      "url": "https://leetcode.com/problems/split-array-largest-sum/"
+    },
+    {
+      "pattern": "binary-search",
+      "title": "Median of Two Sorted Arrays",
+      "slug": "median-of-two-sorted-arrays",
+      "band": 5,
+      "url": "https://leetcode.com/problems/median-of-two-sorted-arrays/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Number of Islands",
+      "slug": "number-of-islands",
+      "band": 2,
+      "url": "https://leetcode.com/problems/number-of-islands/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Clone Graph",
+      "slug": "clone-graph",
+      "band": 2,
+      "url": "https://leetcode.com/problems/clone-graph/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Max Area of Island",
+      "slug": "max-area-of-island",
+      "band": 2,
+      "url": "https://leetcode.com/problems/max-area-of-island/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Rotting Oranges",
+      "slug": "rotting-oranges",
+      "band": 2,
+      "url": "https://leetcode.com/problems/rotting-oranges/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Walls and Gates",
+      "slug": "walls-and-gates",
+      "band": 2,
+      "url": "https://leetcode.com/problems/walls-and-gates/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Course Schedule",
+      "slug": "course-schedule",
+      "band": 2,
+      "url": "https://leetcode.com/problems/course-schedule/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Number of Connected Components in an Undirected Graph",
+      "slug": "number-of-connected-components-in-an-undirected-graph",
+      "band": 2,
+      "url": "https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Pacific Atlantic Water Flow",
+      "slug": "pacific-atlantic-water-flow",
+      "band": 3,
+      "url": "https://leetcode.com/problems/pacific-atlantic-water-flow/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Surrounded Regions",
+      "slug": "surrounded-regions",
+      "band": 3,
+      "url": "https://leetcode.com/problems/surrounded-regions/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Course Schedule II",
+      "slug": "course-schedule-ii",
+      "band": 3,
+      "url": "https://leetcode.com/problems/course-schedule-ii/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Redundant Connection",
+      "slug": "redundant-connection",
+      "band": 3,
+      "url": "https://leetcode.com/problems/redundant-connection/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Graph Valid Tree",
+      "slug": "graph-valid-tree",
+      "band": 3,
+      "url": "https://leetcode.com/problems/graph-valid-tree/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Minimum Cost to Connect All Points",
+      "slug": "min-cost-to-connect-all-points",
+      "band": 3,
+      "url": "https://leetcode.com/problems/min-cost-to-connect-all-points/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Network Delay Time",
+      "slug": "network-delay-time",
+      "band": 3,
+      "url": "https://leetcode.com/problems/network-delay-time/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Word Ladder",
+      "slug": "word-ladder",
+      "band": 4,
+      "url": "https://leetcode.com/problems/word-ladder/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Alien Dictionary",
+      "slug": "alien-dictionary",
+      "band": 4,
+      "url": "https://leetcode.com/problems/alien-dictionary/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Swim in Rising Water",
+      "slug": "swim-in-rising-water",
+      "band": 4,
+      "url": "https://leetcode.com/problems/swim-in-rising-water/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Cheapest Flights Within K Stops",
+      "slug": "cheapest-flights-within-k-stops",
+      "band": 4,
+      "url": "https://leetcode.com/problems/cheapest-flights-within-k-stops/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Reconstruct Itinerary",
+      "slug": "reconstruct-itinerary",
+      "band": 4,
+      "url": "https://leetcode.com/problems/reconstruct-itinerary/"
+    },
+    {
+      "pattern": "graph",
+      "title": "Critical Connections in a Network",
+      "slug": "critical-connections-in-a-network",
+      "band": 5,
+      "url": "https://leetcode.com/problems/critical-connections-in-a-network/"
+    }
+  ]
+}

@@ -1,3 +1,15 @@
+/**
+ * CodeQuest - VS Code LeetCode Progress Tracker
+ * 
+ * Copyright (c) 2025 tayyab3245. All rights reserved.
+ * 
+ * This software is proprietary and confidential. Unauthorized reproduction,
+ * distribution, or modification is strictly prohibited. See LICENSE file
+ * for full terms and conditions.
+ * 
+ * @author tayyab3245
+ * @license Proprietary
+ */
 import { expect } from 'chai';
 
 // Import the actual functions we want to test

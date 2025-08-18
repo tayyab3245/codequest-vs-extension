@@ -521,163 +521,198 @@ function updatePatternSegments() {
   renderPatterns();
 }
 
-// Calendar heatmap functions
-function renderCalendar() {
-    const calendarView = document.getElementById('calendar-view-content');
-    const tooltip = document.getElementById('tooltip');
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const daysToShow = 182; // Approx 6 months
+// Keep a stable map of dateKey -> day element for fast recolor
+const calendarState = {
+  startDate: null,
+  columns: 0,
+  dayNodes: new Map(), // 'YYYY-MM-DD' -> HTMLElement
+};
 
-    let calendarHTML = `
-        <div id="month-labels-container" class="flex text-xs text-gray-400 mb-2"></div>
-        <div class="calendar-scroll-container">
-            <div class="calendar-grid"></div>
-        </div>
-        <div class="flex justify-between items-center mt-3 text-xs text-gray-500">
-            <span>Problems per day</span>
-            <div class="flex items-center gap-1">
-                <span>0</span>
-                <div class="w-3 h-3 rounded-sm bg-[#0e4429]"></div>
-                <div class="w-3 h-3 rounded-sm bg-[#006d32]"></div>
-                <div class="w-3 h-3 rounded-sm bg-[#26a641]"></div>
-                <div class="w-3 h-3 rounded-sm bg-[#39d353]"></div>
-                <span>5+</span>
-            </div>
-        </div>`;
-    calendarView.innerHTML = calendarHTML;
-    
-    const grid = calendarView.querySelector('.calendar-grid');
-    const monthLabelsContainer = calendarView.querySelector('#month-labels-container');
-    const activityLevels = ['#0e4429', '#006d32', '#26a641', '#39d353'];
-    const counts = [1, 3, 5, 6];
+function toLocalKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
-    const today = new Date();
-    const startDate = new Date();
-    startDate.setDate(today.getDate() - daysToShow);
-    
-    // Adjust start date to the beginning of that week (Sunday)
-    startDate.setDate(startDate.getDate() - startDate.getDay());
+function startOfWeekSunday(d) {
+  const r = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  r.setDate(r.getDate() - r.getDay());
+  return r;
+}
 
-    let monthLabelHTML = '';
-    let lastMonth = -1;
-    let monthColCount = 0;
+function addDays(d, n) {
+  const r = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  r.setDate(r.getDate() + n);
+  return r;
+}
 
-    const totalDays = daysToShow + today.getDay() + 1;
+function daysBetween(a, b) {
+  const A = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  const B = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((B - A) / 86400000);
+}
 
-    for (let i = 0; i <= totalDays; i++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + i);
-        
-        // Logic for positioning month labels
-        if (currentDate.getDay() === 0) { // New week (column) starts on Sunday
-            if (currentDate.getMonth() !== lastMonth) {
-                if(lastMonth !== -1) {
-                     monthLabelHTML += `<span style="width: ${monthColCount * 20}px" class="text-left">${monthNames[lastMonth]}</span>`;
-                }
-                lastMonth = currentDate.getMonth();
-                monthColCount = 0;
-            }
-            monthColCount++;
+function minutesToLevel(minutes) {
+  if (!minutes || minutes <= 0) return 0;
+  if (minutes <= 20) return 1;
+  if (minutes <= 40) return 2;
+  if (minutes <= 60) return 3;
+  return 4; // 60+ mins
+}
+
+function levelToColor(level) {
+  switch (level) {
+    case 1: return '#0e4429';
+    case 2: return '#006d32';
+    case 3: return '#26a641';
+    case 4: return '#39d353';
+    default: return '#2d2d2d';
+  }
+}
+
+function buildCalendar(daysToShow = 182) {
+  const calendarMount = document.getElementById('calendar-view-content') || document.getElementById('calendar-view');
+  const tooltip = document.getElementById('tooltip');
+  if (!calendarMount) return;
+
+  // Build structure
+  calendarMount.innerHTML = `
+    <div class="calendar-scroll-container">
+      <div class="calendar-inner">
+        <div class="calendar-month-labels"></div>
+        <div class="calendar-grid"></div>
+      </div>
+    </div>
+    <div class="flex justify-between items-center mt-3 text-xs text-gray-500">
+      <span>Problems per day</span>
+      <div class="flex items-center gap-1">
+        <span>0</span>
+        <div class="w-3 h-3 rounded-sm bg-[#0e4429]"></div>
+        <div class="w-3 h-3 rounded-sm bg-[#006d32]"></div>
+        <div class="w-3 h-3 rounded-sm bg-[#26a641]"></div>
+        <div class="w-3 h-3 rounded-sm bg-[#39d353]"></div>
+        <span>5+</span>
+      </div>
+    </div>`;
+
+  const scroll = calendarMount.querySelector('.calendar-scroll-container');
+  const labels = calendarMount.querySelector('.calendar-month-labels');
+  const grid = calendarMount.querySelector('.calendar-grid');
+
+  // Compute date range: start on Sunday
+  const today = new Date();
+  const rawStart = addDays(today, -daysToShow);
+  const start = startOfWeekSunday(rawStart);
+  const totalDays = daysBetween(start, today) + 1;
+  const columns = Math.ceil(totalDays / 7);
+
+  calendarState.startDate = start;
+  calendarState.columns = columns;
+  calendarState.dayNodes.clear();
+
+  // Create month labels per column (week)
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let lastLabeledMonth = null;
+
+  for (let col = 0; col < columns; col++) {
+    const colStart = addDays(start, col * 7);
+
+    // Does this week contain the 1st of any month?
+    let labelText = '';
+    for (let off = 0; off < 7; off++) {
+      const d = addDays(colStart, off);
+      if (d.getDate() === 1) {
+        const m = d.getMonth();
+        if (m !== lastLabeledMonth) {
+          labelText = monthNames[m];
+          lastLabeledMonth = m;
         }
-
-        const day = document.createElement('div');
-        day.className = 'calendar-day';
-        
-        // Use actual calendar data based on real activity
-        const dateStr = currentDate.toISOString().split('T')[0];
-        const dayMinutes = state.calendar.dailyMinutes[dateStr] || 0;
-        
-        let problemCount = 0;
-        if (dayMinutes > 0) {
-            // Convert minutes to problem count (roughly 15 minutes per problem)
-            problemCount = Math.ceil(dayMinutes / 15);
-            let level = 0;
-            if (problemCount >= 6) level = 3;      // 5+ problems
-            else if (problemCount >= 5) level = 2; // 3-4 problems  
-            else if (problemCount >= 3) level = 1; // 1-2 problems
-            else level = 0;                        // <1 problem
-            
-            day.style.backgroundColor = activityLevels[level];
-        } else {
-            // Check if any problems were solved on this date from state.solved
-            let solvedToday = 0;
-            if (state.solved) {
-                for (const patternKey in state.solved) {
-                    for (const problemId in state.solved[patternKey]) {
-                        const solvedData = state.solved[patternKey][problemId];
-                        if (solvedData && solvedData.solvedAt) {
-                            const solvedDate = new Date(solvedData.solvedAt).toISOString().split('T')[0];
-                            if (solvedDate === dateStr) {
-                                solvedToday++;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            if (solvedToday > 0) {
-                problemCount = solvedToday;
-                let level = 0;
-                if (solvedToday >= 6) level = 3;
-                else if (solvedToday >= 5) level = 2; 
-                else if (solvedToday >= 3) level = 1;
-                else level = 0;
-                
-                day.style.backgroundColor = activityLevels[level];
-            } else {
-                // No activity - keep default gray
-                problemCount = 0;
-            }
-        }
-        
-        day.dataset.count = problemCount;
-        
-        // Add tooltip events
-        day.addEventListener('mouseenter', (e) => {
-            tooltip.style.display = 'block';
-            tooltip.textContent = `${e.target.dataset.count} problems on ${currentDate.toDateString()}`;
-        });
-        day.addEventListener('mouseleave', () => { 
-            tooltip.style.display = 'none'; 
-        });
-        day.addEventListener('mousemove', (e) => {
-            tooltip.style.left = `${e.pageX + 10}px`;
-            tooltip.style.top = `${e.pageY + 10}px`;
-        });
-
-        grid.appendChild(day);
+        break;
+      }
     }
-    // Add the last month label
-    monthLabelHTML += `<span style="width: ${monthColCount * 20}px" class="text-left">${monthNames[lastMonth]}</span>`;
-    monthLabelsContainer.innerHTML = monthLabelHTML;
 
-    // Drag to scroll logic
-    const slider = calendarView.querySelector('.calendar-scroll-container');
-    let isDown = false, startX, scrollLeft;
-    slider.addEventListener('mousedown', (e) => { 
-        isDown = true; 
-        slider.classList.add('grabbing'); 
-        startX = e.pageX - slider.offsetLeft; 
-        scrollLeft = slider.scrollLeft; 
-    });
-    slider.addEventListener('mouseleave', () => { 
-        isDown = false; 
-        slider.classList.remove('grabbing'); 
-    });
-    slider.addEventListener('mouseup', () => { 
-        isDown = false; 
-        slider.classList.remove('grabbing'); 
-    });
-    slider.addEventListener('mousemove', (e) => { 
-        if (!isDown) return; 
-        e.preventDefault(); 
-        const x = e.pageX - slider.offsetLeft; 
-        const walk = (x - startX) * 2; // scroll-fast 
-        slider.scrollLeft = scrollLeft - walk; 
-    });
-    
-    // Scroll to the end by default to show today's date
-    slider.scrollLeft = slider.scrollWidth;
+    const labelCell = document.createElement('div');
+    labelCell.className = 'calendar-month-label';
+    if (labelText) labelCell.textContent = labelText;
+    labels.appendChild(labelCell);
+  }
+
+  // Create day cells (row 0..6 for Sun..Sat) per column
+  for (let col = 0; col < columns; col++) {
+    const colStart = addDays(start, col * 7);
+    for (let row = 0; row < 7; row++) {
+      const d = addDays(colStart, row);
+      const key = toLocalKey(d);
+      const day = document.createElement('div');
+      day.className = 'calendar-day';
+      day.dataset.key = key;
+      day.dataset.count = '0';
+
+      // Tooltip
+      day.addEventListener('mouseenter', () => {
+        if (!tooltip) return;
+        tooltip.style.display = 'block';
+        const minutes = parseInt(day.dataset.count) || 0;
+        tooltip.textContent = `${Math.ceil(minutes / 15)} problems on ${d.toDateString()}`;
+      });
+      day.addEventListener('mouseleave', () => { if (tooltip) tooltip.style.display = 'none'; });
+      day.addEventListener('mousemove', (e) => {
+        if (!tooltip) return;
+        const pad = 10;
+        const vw = window.innerWidth;
+        const tw = 180;
+        let left = e.pageX + pad;
+        if (left + tw > vw) left = vw - tw - pad;
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${e.pageY + pad}px`;
+      });
+
+      grid.appendChild(day);
+      calendarState.dayNodes.set(key, day);
+    }
+  }
+
+  // Drag-to-scroll
+  let isDown = false, startX = 0, scrollLeft = 0;
+  scroll.addEventListener('mousedown', (e) => {
+    isDown = true; scroll.classList.add('grabbing');
+    startX = e.pageX - scroll.offsetLeft; scrollLeft = scroll.scrollLeft;
+  });
+  scroll.addEventListener('mouseleave', () => { isDown = false; scroll.classList.remove('grabbing'); });
+  scroll.addEventListener('mouseup', () => { isDown = false; scroll.classList.remove('grabbing'); });
+  scroll.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - scroll.offsetLeft;
+    scroll.scrollLeft = scrollLeft - (x - startX) * 2;
+  });
+
+  // Show latest
+  scroll.scrollLeft = scroll.scrollWidth;
+}
+
+function updateCalendarColors() {
+  // Merge real activity into day cells
+  // Prefer dailyMinutes; fallback to dailySolvedCounts if you track that
+  const minutesMap = (state?.calendar?.dailyMinutes) || {};
+  for (const [key, el] of calendarState.dayNodes.entries()) {
+    const mins = minutesMap[key] || 0;
+    const level = minutesToLevel(mins);
+    el.style.backgroundColor = levelToColor(level);
+    el.dataset.count = String(mins);
+  }
+}
+
+// Call this after build or on state changes
+function renderCalendarAccurate() {
+  buildCalendar(182);
+  updateCalendarColors();
+}
+
+// Calendar heatmap functions (legacy wrapper)
+function renderCalendar() {
+  renderCalendarAccurate();
 }
 
 function updateCalendarHeatmap() {

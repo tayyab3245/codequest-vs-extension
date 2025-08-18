@@ -4,6 +4,8 @@
 
 ![Pattern Mastery View](docs/screenshots/patterns.png)
 
+![CodeQuest Activity Dashboard](docs/screenshots/activity-demo.png)
+
 ## Features
 
 - **Visual Progress Dashboard** - Track your LeetCode journey with GitHub-style contribution heatmaps
@@ -13,7 +15,6 @@
 - **Session Analytics** - Monitor your practice consistency and improvement over time
 - **Real-time Sync** - Instantly updates as you solve problems in your workspace
 
-![CodeQuest Activity Dashboard](docs/screenshots/activity.png)
 
 ## Quick Start
 

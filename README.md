@@ -1,4 +1,4 @@
-# CodeQuest Coach VS Code Extension
+# CodeQuest
 
 A VS Code extension that provides a **sidebar dashboard** for tracking your LeetCode practice progress directly within VS Code. Automatically scans your workspace for coding problems and displays current progress with pattern recognition and difficulty estimation.
 

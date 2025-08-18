@@ -1,144 +1,96 @@
 # CodeQuest
 
-A VS Code extension that provides a **sidebar dashboard** for tracking your LeetCode practice progress directly within VS Code. Automatically scans your workspace for coding problems and displays current progress with pattern recognition and difficulty estimation.
+**Master LeetCode patterns directly in VS Code.** CodeQuest transforms your coding practice into a visual journey with progress tracking, pattern mastery, and intelligent insights.
+
+![CodeQuest Activity Dashboard](docs/screenshots/activity.png)
 
 ## Features
 
-- **Activity Bar Integration**: Adds a CodeQuest icon to VS Code Activity Bar
-- **Dashboard View**: Real-time workspace scanning and problem detection
-- **Pattern Recognition**: Automatically parses problem structure from file paths
-- **Progress Tracking**: Persistent state tracking with installation history
-- **Command Integration**: Session management and problem tracking commands
+- **Visual Progress Dashboard** - Track your LeetCode journey with GitHub-style contribution heatmaps
+- **Pattern Mastery System** - Focus on the 75 essential coding patterns with structured learning paths  
+- **Smart Workspace Detection** - Automatically discovers and categorizes your coding problems
+- **Difficulty-Based Progress** - Easy/Medium/Hard tracking with visual indicators
+- **Session Analytics** - Monitor your practice consistency and improvement over time
+- **Real-time Sync** - Instantly updates as you solve problems in your workspace
 
-## Where to Find the Extension
+![Pattern Mastery View](docs/screenshots/patterns.png)
 
-1. **Activity Bar**: Look for the CodeQuest icon (puzzle piece) in the left sidebar
-2. **Dashboard Panel**: Click the icon to reveal the Dashboard view
-3. **Command Palette**: Access commands via `Ctrl+Shift+P` -> "CodeQuest:"
+##  Quick Start
 
-## Development Setup
+1. **Install**: Open VS Code → Extensions → Search "CodeQuest"
+2. **Activate**: Click the CodeQuest icon in the Activity Bar (left sidebar)
+3. **Practice**: Organize your LeetCode solutions in folders and watch your progress grow
 
-### Prerequisites
-- VS Code 1.86.0 or higher
-- Node.js and npm
+##  Expected Workspace Structure
 
-### Local Development
+CodeQuest works best when your coding problems follow this pattern:
+```
+leetcode/
+├── arrays-and-hashing/
+│   ├── two-sum/homework.js
+│   ├── group-anagrams/homework.py
+│   └── top-k-frequent/homework.cpp
+├── two-pointers/
+│   ├── valid-palindrome/homework.js
+│   └── 3sum/homework.py
+└── sliding-window/
+    ├── longest-substring/homework.js
+    └── minimum-window/homework.py
+```
+
+##  Pattern Categories
+
+CodeQuest recognizes 15+ essential coding patterns including:
+- Arrays & Hashing
+- Two Pointers  
+- Sliding Window
+- Stack & Queues
+- Binary Search
+- Linked Lists
+- Trees & Graphs
+- Dynamic Programming
+- Backtracking
+- And more...
+
+##  Progress Tracking
+
+- **Daily Activity Heatmap** - Visualize your coding consistency
+- **Pattern Completion Status** - See which areas need more practice  
+- **Difficulty Distribution** - Balance your Easy/Medium/Hard problem solving
+- **Session History** - Track your practice sessions over time
+
+## Known Issues
+
+- **File Generation**: Selecting a problem in the dashboard doesn't automatically generate the solution file yet
+- **Pattern Detection**: Some custom folder structures may not be recognized automatically
+
+## Future Enhancements
+
+- **AI-Powered Insights** - Get personalized recommendations based on your progress patterns
+- **Smart Problem Suggestions** - Intelligent next-problem recommendations  
+- **Performance Analytics** - Advanced metrics and learning insights
+- **Study Plan Generation** - Automated study schedules based on your goals
+
+## 🛠️ Development
+
 ```bash
-# Install dependencies
+# Clone and setup
+git clone https://github.com/tayyab3245/CodeQuest-Coach
+cd CodeQuest-Coach
 npm install
 
-# Compile the extension
-npm run compile
-
-# Or run in watch mode for development
+# Run in development mode
 npm run watch
-```
+# Press F5 in VS Code to launch Extension Development Host
 
-### Testing the Extension
-1. Open this folder (`codequest-coach`) in VS Code
-2. Press **F5** to launch Extension Development Host
-3. In the new VS Code window:
-   - Look for the CodeQuest icon in the Activity Bar
-   - Click it to open the Dashboard
-   - Open a `homework.js` file matching the pattern to see problem detection
-
-## Run & Debug
-Press **F5** to launch the extension in debug mode. The first run triggers a background watch build that automatically rebuilds the extension when you make changes to the source code.
-
-### Expected Project Structure
-The extension works best with projects following this structure:
-```
-patterns/
-  <pattern-name>/
-    problem-<number>-<slug>/
-      <YYYY-MM-DD>/
-        homework.js
-```
-
-Example:
-```
-patterns/
-  arrays-and-hashing/
-    problem-001-contains-duplicate/
-      2025-07-17/
-        homework.js
-```
-
-## Available Commands
-
-Access these via Command Palette (`Ctrl+Shift+P`):
-
-- **CodeQuest: Start Session** - Begin a practice session
-- **CodeQuest: End Session** - End current session  
-- **CodeQuest: Mark Current Problem Solved** - Mark active problem as completed
-- **CodeQuest: Import Legacy Training File** - Import existing training data
-
-## Dashboard Features
-
-- **Workspace Status**: Shows current workspace path and problem count
-- **Current Problem**: Displays details when a matching `homework.js` file is open:
-  - Pattern name (e.g., "Arrays And Hashing")
-  - Problem number and name
-  - Practice date
-  - Estimated difficulty (Easy/Medium/Hard)
-- **Installation Tracking**: Shows when the extension was first installed
-
-## Build Scripts
-
-- `npm run compile` - Build the extension for production
-- `npm run watch` - Build and watch for file changes during development
-- `npm run vscode:prepublish` - Prepare extension for publishing
-
-## Testing
-
-The extension includes a comprehensive test suite with both unit and integration tests.
-
-### Running Tests
-
-```bash
-# Run all tests
+# Run tests
 npm test
-
-# Run only unit tests
-npm run test:unit
-
-# Run only integration tests  
-npm run test:integration
-
-# Run tests in watch mode
-npm run test:watch
 ```
 
-### Test Coverage
+##  License
 
-**Unit Tests** (`test/unit/`):
-- `problemPath.test.ts` - Path parsing, slug conversion, difficulty inference (51 test cases)
-- `htmlCsp.test.ts` - HTML generation and Content Security Policy validation (23 test cases)
+Copyright (c) 2025 tayyab3245. All rights reserved.
 
-**Integration Tests** (`test/integration/`):
-- `scanProblems.test.ts` - Workspace scanning and file discovery (11 test cases)
+This software is proprietary and confidential. See [LICENSE](LICENSE) for full terms.
 
-### Test Fixtures
-
-The test suite includes realistic workspace fixtures in `test-fixtures/`:
-- `basic-workspace/` - Contains sample problems matching expected structure
-- `empty-workspace/` - Empty directory for testing edge cases
-
-### Dependencies
-
-Testing uses Mocha and Chai with TypeScript support:
-- `mocha` - Test runner
-- `chai` - Assertion library 
-- `ts-node` - TypeScript execution for tests
-- `@types/mocha`, `@types/chai` - Type definitions
-
-## Architecture
-
-- **Extension Host**: `src/extension.ts` - Main extension logic with workspace change handling
-- **Dashboard Provider**: Manages webview and state updates with programmatically generated HTML
-- **Workspace Scanner**: Automatically finds and counts problem files
-- **Path Parser**: `src/lib/problemPath.ts` - Extracts metadata from file paths using regex patterns
-- **HTML Builder**: `src/webview/html.ts` - Generates webview markup with CSP compliance (single source of truth)
-- **State Management**: Uses VS Code globalState for persistence
-
-This extension serves as a foundation for enhanced coding practice workflows within VS Code.
+---

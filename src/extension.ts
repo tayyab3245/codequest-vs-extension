@@ -388,7 +388,7 @@ class DashboardProvider implements vscode.WebviewViewProvider {
         'stack',
         'binary-search',
         'dynamic-programming',
-        'graph'
+        'graphs'
       ];
 
       const selectedPattern = await vscode.window.showQuickPick(patterns, {

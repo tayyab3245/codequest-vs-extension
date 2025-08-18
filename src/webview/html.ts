@@ -34,7 +34,7 @@ export function buildDashboardHtml(options: DashboardHtmlOptions): string {
         <!-- Activity & Analysis Section -->
         <div id="analysis-section" class="mt-12 pt-8 border-t border-gray-800">
             <h2 class="text-2xl font-bold text-white mb-6">Activity & Analysis</h2>
-            <div class="bg-[#2a2a2a] p-6 rounded-xl">
+            <div class="panel">
                 <div>
                     <h3 class="font-semibold text-white mb-4">Daily Activity</h3>
                     <div id="calendar-view-content">

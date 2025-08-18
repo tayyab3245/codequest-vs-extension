@@ -134,21 +134,26 @@ body {
     max-width: 400px !important;
 }
 
+/* Pattern row divider (Tailwind 'divide-y' alternative) */
+#patterns-list > .pattern-row + .pattern-row {
+  border-top: 1px solid #374151; /* gray-700 for contrast */
+}
+
 /* Pattern Bar Segments - 20 equal segments per pattern */
 .pattern-bar-segment {
     height: 16px;
     border-radius: 4px;
-    transition: flex-grow 0.3s ease-in-out, filter 0.2s ease-in-out;
-    flex-grow: 1; /* exact match to EXAMPLE.html */
-    background: #2d2d2d; /* gray by default */
+    transition: flex-grow 0.25s ease, filter 0.15s ease, background-color 0.15s ease;
+    flex: 1 1 0;
+    background: #2d2d2d;
+    border: 1px solid #4b5563;
     cursor: pointer;
 }
 .pattern-bar-segment.expanded {
-    flex-grow: 2.5;
+    flex-grow: 2.4;
 }
 .pattern-bar-segment:hover {
     filter: brightness(1.2);
-    z-index: 10;
 }
 
 /* Difficulty colors - ONLY applied when solved */
@@ -156,35 +161,113 @@ body {
 .pattern-bar-segment.solved.seg-medium { background: #ffbf00; border-color: #ffbf00; }
 .pattern-bar-segment.solved.seg-hard { background: #f94d4d; border-color: #f94d4d; }
 
-/* Questions panel open/close animation - exact match to example */
+/* Questions panel open/close animation */
 .questions-container {
     max-height: 0;
     opacity: 0;
     overflow: hidden;
-    transition: max-height 0.4s ease-out, opacity 0.3s ease-out, padding-top 0.4s ease-out;
+    transition: max-height 0.35s ease, opacity 0.25s ease, padding-top 0.35s ease;
     padding-top: 0;
 }
 .questions-container.open {
-    max-height: 600px;
+    max-height: 640px;
     opacity: 1;
-    padding-top: 1.5rem;
+    padding-top: 1.25rem;
 }
 
-/* Problem items + selection animation - matches example */
+/* Problem items + selection animation */
 .problem-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2d2d2d;
+    padding: 10px 12px;
+    border-radius: 10px;
     cursor: pointer;
     transition: background-color 0.15s ease, transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     border: 1px solid transparent;
 }
 .problem-item:hover, .problem-item:focus { 
-    background: #3d3d3d !important; /* override utility classes */
+    background: #3d3d3d !important; 
     outline: none; 
 }
 .problem-item.is-selected {
-    background: #33363a !important; /* override utility classes */
+    background: #33363a !important;
     border-color: #2563eb; /* blue-600 accent */
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) inset;
     transform: translateY(-1px);
+}
+
+/* Prevent problem titles from wrapping and keep single line */
+.problem-item > div:first-child {
+    min-width: 0; /* Allow flexbox shrinking */
+    flex: 1; /* Take available space */
+    display: flex;
+    align-items: center;
+    white-space: nowrap; /* Prevent wrapping */
+    overflow: hidden; /* Hide overflow */
+}
+
+.problem-item .text-white {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Status tags */
+.status-tag { 
+    padding: 2px 10px; 
+    border-radius: 12px; 
+    font-size: 12px; 
+    font-weight: 600; 
+    text-align: center; 
+}
+.tag-solved { 
+    background-color: rgba(74, 207, 74, 0.12); 
+    color: #4acf4a; 
+}
+.tag-unsolved { 
+    background-color: rgba(156, 163, 175, 0.15); 
+    color: #e5e7eb; 
+}
+.tag-attempted { 
+    background-color: rgba(255, 191, 0, 0.12); 
+    color: #ffbf00; 
+}
+
+/* Activity & Analysis container */
+#analysis-section .panel {
+    background: #2a2a2a;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #3b3b3b;
+}
+
+/* Calendar grid improvements */
+.calendar-scroll-container { 
+    height: 140px; 
+    width: 100%; 
+    overflow-x: auto; 
+    overflow-y: hidden; 
+    cursor: grab; 
+    user-select: none; 
+}
+.calendar-scroll-container.grabbing { 
+    cursor: grabbing; 
+}
+.calendar-grid { 
+    display: grid; 
+    grid-template-rows: repeat(7, 1fr); 
+    grid-auto-flow: column; 
+    gap: 2px; 
+}
+.calendar-day { 
+    width: 18px; 
+    height: 18px; 
+    border-radius: 3px; 
+    background-color: #2d2d2d; 
 }
 
 /* Activity & Analysis container */

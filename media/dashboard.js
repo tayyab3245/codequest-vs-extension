@@ -36,6 +36,7 @@ const patternDisplayNames = {
   'heap-priority-queue': 'Heap / Priority Queue',
   'backtracking': 'Backtracking',
   'graphs': 'Graphs',
+  'graph': 'Graphs', // backward compatibility
   'advanced-graphs': 'Advanced Graphs',
   '1-d-dynamic-programming': '1-D Dynamic Programming',
   '2-d-dynamic-programming': '2-D Dynamic Programming',
@@ -229,7 +230,7 @@ function renderPatterns() {
     const totalSolved = segments.filter(s => s.solved).length;
 
     const patternContainer = document.createElement('div');
-    patternContainer.className = 'py-6 first:pt-0 last:pb-0';
+    patternContainer.className = 'pattern-row py-6 first:pt-0 last:pb-0';
     
     const mainRow = document.createElement('div');
     mainRow.className = 'flex items-center justify-between';
@@ -281,7 +282,7 @@ function renderPatterns() {
     
     const stats = document.createElement('div');
     stats.className = 'text-md font-medium text-gray-400';
-    stats.textContent = `Solved ${totalSolved}/${totalProblems}`;
+    stats.textContent = `${totalSolved}/${totalProblems}`;
     mainRow.appendChild(stats);
     
     patternContainer.appendChild(mainRow);
@@ -586,13 +587,13 @@ function buildCalendar(daysToShow = 182) {
     </div>
     <div class="flex justify-between items-center mt-3 text-xs text-gray-500">
       <span>Problems per day</span>
-      <div class="flex items-center gap-1">
-        <span>0</span>
-        <div class="w-3 h-3 rounded-sm bg-[#0e4429]"></div>
-        <div class="w-3 h-3 rounded-sm bg-[#006d32]"></div>
-        <div class="w-3 h-3 rounded-sm bg-[#26a641]"></div>
-        <div class="w-3 h-3 rounded-sm bg-[#39d353]"></div>
-        <span>5+</span>
+      <div class="flex items-center gap-2">
+        <span>Less</span>
+        <div class="w-3 h-3 rounded-sm" style="background-color: #0e4429;"></div>
+        <div class="w-3 h-3 rounded-sm" style="background-color: #006d32;"></div>
+        <div class="w-3 h-3 rounded-sm" style="background-color: #26a641;"></div>
+        <div class="w-3 h-3 rounded-sm" style="background-color: #39d353;"></div>
+        <span>More</span>
       </div>
     </div>`;
 
@@ -654,7 +655,7 @@ function buildCalendar(daysToShow = 182) {
         if (!tooltip) return;
         tooltip.style.display = 'block';
         const minutes = parseInt(day.dataset.count) || 0;
-        tooltip.textContent = `${Math.ceil(minutes / 15)} problems on ${d.toDateString()}`;
+        tooltip.textContent = `${Math.ceil(minutes / 15)} Problems on ${d.toDateString()}`;
       });
       day.addEventListener('mouseleave', () => { if (tooltip) tooltip.style.display = 'none'; });
       day.addEventListener('mousemove', (e) => {

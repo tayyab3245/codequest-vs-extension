@@ -89,7 +89,10 @@
       "properties": {
         "codequest.catalog.source": {
           "type": "string",
-          "enum": ["cache", "bundled"],
+          "enum": [
+            "cache",
+            "bundled"
+          ],
           "default": "cache",
           "description": "Source for problem catalog: cache (from indexer) or bundled (static)"
         },
@@ -107,13 +110,20 @@
         },
         "codequest.pattern.questionsPerPattern": {
           "type": "number",
-          "enum": [20, 40, 60, 100],
+          "enum": [
+            20,
+            40,
+            60,
+            100
+          ],
           "default": 20,
           "description": "Number of segments per pattern bar"
         },
         "codequest.generate.language": {
           "type": "string",
-          "enum": ["javascript"],
+          "enum": [
+            "javascript"
+          ],
           "default": "javascript",
           "description": "Language for generated problem stubs"
         }
@@ -141,5 +151,8 @@
     "sinon": "^21.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1"
   }
 }

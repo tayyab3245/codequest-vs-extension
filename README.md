@@ -28,22 +28,6 @@
 5. **Activate**: In the new VS Code window, click the CodeQuest icon in the Activity Bar
 6. **Practice**: Organize your LeetCode solutions and watch your progress grow
 
-## Expected Workspace Structure
-
-CodeQuest works best when your coding problems follow this pattern:
-```
-leetcode/
-├── arrays-and-hashing/
-│   ├── two-sum/homework.js
-│   ├── group-anagrams/homework.py
-│   └── top-k-frequent/homework.cpp
-├── two-pointers/
-│   ├── valid-palindrome/homework.js
-│   └── 3sum/homework.py
-└── sliding-window/
-    ├── longest-substring/homework.js
-    └── minimum-window/homework.py
-```
 
 ## Pattern Categories
 
@@ -77,20 +61,6 @@ CodeQuest recognizes 15+ essential coding patterns including:
 - **Performance Analytics** - Advanced metrics and learning insights
 - **Study Plan Generation** - Automated study schedules based on your goals
 
-## Development
-
-```bash
-# Clone and setup
-git clone https://github.com/tayyab3245/CodeQuest-Coach
-cd CodeQuest-Coach
-npm install
-
-# Run in development mode
-npm run watch
-# Press F5 in VS Code to launch Extension Development Host
-
-# Run tests
-npm test
 ```
 
 ## License

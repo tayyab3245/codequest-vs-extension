@@ -6,6 +6,8 @@
 
 ![CodeQuest Activity Dashboard](docs/screenshots/activity-demo.png)
 
+![CodeQuest Problem Generator](docs/screenshots/problems.png)
+
 ## Features
 
 - **Visual Progress Dashboard** - Track your LeetCode journey with GitHub-style contribution heatmaps
@@ -19,7 +21,7 @@
 ## Quick Start
 
 ### Local Development Setup
-1. **Clone Repository**: `git clone https://github.com/tayyab3245/CodeQuest-Coach.git`
+1. **Clone Repository**: `git clone https://github.com/tayyab3245/codequest-vs-extension.git`
 2. **Install Dependencies**: `cd CodeQuest-Coach && npm install`
 3. **Open in VS Code**: Open the project folder in VS Code
 4. **Run Extension**: Press `F5` to launch Extension Development Host
@@ -66,8 +68,7 @@ CodeQuest recognizes 15+ essential coding patterns including:
 
 ## Known Issues
 
-- **File Generation**: Selecting a problem in the dashboard doesn't automatically generate the solution file yet
-- **Pattern Detection**: Some custom folder structures may not be recognized automatically
+- **File Generation**: Selecting a problem in the dashboard doesn't automatically generate the problem file sometimes.
 
 ## Future Enhancements
 
@@ -100,4 +101,4 @@ This software is proprietary and confidential. See [LICENSE](LICENSE) for full t
 
 ---
 
-**Ready to master coding patterns?** Install CodeQuest and transform your LeetCode practice into a visual, data-driven journey!
+**Ready to master coding patterns?** Setup CodeQuest and transform your LeetCode practice into a visual, data-driven journey!

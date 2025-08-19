@@ -12,7 +12,6 @@
 
 - **Visual Progress Dashboard** - Track your LeetCode journey with GitHub-style contribution heatmaps
 - **Pattern Mastery System** - Focus on the 6 essential coding patterns with structured learning paths  
-- **Smart Workspace Detection** - Automatically discovers and categorizes your coding problems
 - **Difficulty-Based Progress** - Easy/Medium/Hard tracking with visual indicators
 - **Session Analytics** - Monitor your practice consistency and improvement over time
 - **Real-time Sync** - Instantly updates as you solve problems in your workspace
@@ -42,8 +41,6 @@ CodeQuest recognizes 6 essential coding patterns including:
 ## Progress Tracking
 
 - **Daily Activity Heatmap** - Visualize your coding consistency
-- **Pattern Completion Status** - See which areas need more practice  
-- **Difficulty Distribution** - Balance your Easy/Medium/Hard problem solving
 - **Session History** - Track your practice sessions over time
 
 ## Known Issues
@@ -56,8 +53,9 @@ CodeQuest recognizes 6 essential coding patterns including:
 - **Smart Problem Suggestions** - Intelligent next-problem recommendations  
 - **Performance Analytics** - Advanced metrics and learning insights
 - **Study Plan Generation** - Automated study schedules based on your goals
+- **Pattern Completion Status** - See which areas need more practice  
 
-```
+
 
 ## License
 

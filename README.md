@@ -11,7 +11,7 @@
 ## Features
 
 - **Visual Progress Dashboard** - Track your LeetCode journey with GitHub-style contribution heatmaps
-- **Pattern Mastery System** - Focus on the 75 essential coding patterns with structured learning paths  
+- **Pattern Mastery System** - Focus on the 6 essential coding patterns with structured learning paths  
 - **Smart Workspace Detection** - Automatically discovers and categorizes your coding problems
 - **Difficulty-Based Progress** - Easy/Medium/Hard tracking with visual indicators
 - **Session Analytics** - Monitor your practice consistency and improvement over time
@@ -31,17 +31,13 @@
 
 ## Pattern Categories
 
-CodeQuest recognizes 15+ essential coding patterns including:
+CodeQuest recognizes 6 essential coding patterns including:
 - Arrays & Hashing
 - Two Pointers  
 - Sliding Window
 - Stack & Queues
 - Binary Search
-- Linked Lists
 - Trees & Graphs
-- Dynamic Programming
-- Backtracking
-- And more...
 
 ## Progress Tracking
 

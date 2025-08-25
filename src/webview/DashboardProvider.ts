@@ -463,6 +463,13 @@ module.exports = solve;
         delete this.solvedCatalog[key];
       } else {
         this.solvedCatalog[key] = new Date().toISOString();
+        
+        // Add time to calendar when marking as solved (default 5 minutes)
+        const today = this.getTodayKey();
+        const minutesToAdd = 5; // Default time credit for solving a problem
+        this.state.calendar.dailyMinutes[today] = (this.state.calendar.dailyMinutes[today] || 0) + minutesToAdd;
+        this.state.session.todayMinutes = this.state.calendar.dailyMinutes[today];
+        await this.saveCalendarData();
       }
       await this.context.globalState.update('cq.solvedCatalog.v1', this.solvedCatalog);
       // Reflect in state

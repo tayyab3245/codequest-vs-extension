@@ -129,12 +129,26 @@ export function renderQuestions(patternKey, segIndex, container) {
 
   const questionInfo = document.createElement('div');
 
-  // ID label
+  // ID label with B1-B5 difficulty buckets
   const questionId = document.createElement('span');
   questionId.className = 'text-gray-500 mr-3 font-mono text-sm';
-  const patternAbbrev = patternKey.split('-').map(w => w.charAt(0).toUpperCase()).join('');
-  const dInit = seg.difficulty === 'Easy' ? 'E' : seg.difficulty === 'Medium' ? 'M' : 'H';
-  questionId.textContent = `${patternAbbrev}-${dInit}${String(segIndex + 1).padStart(2, '0')}`;
+  
+  // B1-B5 difficulty bucket system based on position in sorted 20-segment progression
+  // Problems are sorted: Easy → Medium → Hard, so position indicates difficulty progression
+  let bucket = 'B1'; // Default
+  if (segIndex >= 0 && segIndex <= 3) {
+    bucket = 'B1';      // 20% - Easiest (segments 0-3)
+  } else if (segIndex >= 4 && segIndex <= 7) {
+    bucket = 'B2';      // 20% - Easy-Medium (segments 4-7)
+  } else if (segIndex >= 8 && segIndex <= 11) {
+    bucket = 'B3';      // 20% - Medium (segments 8-11)
+  } else if (segIndex >= 12 && segIndex <= 15) {
+    bucket = 'B4';      // 20% - Medium-Hard (segments 12-15)
+  } else if (segIndex >= 16 && segIndex <= 19) {
+    bucket = 'B5';      // 20% - Hardest (segments 16-19)
+  }
+  
+  questionId.textContent = bucket;
 
   const questionName = document.createElement('span');
   questionName.className = 'text-white';
@@ -176,12 +190,19 @@ export function renderQuestions(patternKey, segIndex, container) {
 
 export function handleSegmentClick(event) {
   if (event.target.dataset.action) return; // ignore timer btns
+  
   const clicked = event.target;
   const { pattern, segIndex } = clicked.dataset;
-  const patternContainer = clicked.closest('.py-6');
-  const questionsContainer = patternContainer.querySelector('.questions-container');
+  
+  const patternContainer = clicked.closest('.pattern-row');
+  const questionsContainer = patternContainer?.querySelector('.questions-container');
   const barContainer = clicked.parentElement;
   const isOpen = clicked.classList.contains('expanded');
+
+  if (!patternContainer || !questionsContainer) {
+    console.error('Missing required elements for segment click');
+    return;
+  }
 
   barContainer.querySelectorAll('.pattern-bar-segment').forEach(seg => seg.classList.remove('expanded'));
 

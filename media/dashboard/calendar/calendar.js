@@ -154,6 +154,9 @@ export function renderD3Calendar(containerEl, year, minutesMap) {
     // Add tooltip functionality
     setupTooltips(dayRects, minutesMap);
 
+    // Add calendar legend
+    addCalendarLegend(g, colors, width - padding.right - 150, height - padding.bottom - 15);
+
     // Store reference for updates
     containerEl._d3Calendar = {
         svg: svg,
@@ -225,6 +228,64 @@ export function renderCalendarAccurate() {
  */
 export function updateCalendarHeatmap() {
     renderCalendar();
+}
+
+/**
+ * Adds a legend to the calendar showing activity levels
+ * @param {d3.Selection} g - The SVG group element
+ * @param {Object} colors - Color mapping for activity levels
+ * @param {number} x - X position for the legend
+ * @param {number} y - Y position for the legend
+ */
+function addCalendarLegend(g, colors, x, y) {
+    const legendData = [
+        { level: 0, label: 'No activity', minutes: 0 },
+        { level: 1, label: '< 30 min', minutes: 15 },
+        { level: 2, label: '30-60 min', minutes: 45 },
+        { level: 3, label: '1-2 hrs', minutes: 90 },
+        { level: 4, label: '2+ hrs', minutes: 150 }
+    ];
+
+    const legend = g.append('g')
+        .attr('class', 'calendar-legend')
+        .attr('transform', `translate(${x}, ${y})`);
+
+    // Legend title
+    legend.append('text')
+        .attr('class', 'legend-title')
+        .attr('x', -10)
+        .attr('y', -5)
+        .attr('font-size', '10px')
+        .attr('fill', '#9ca3af')
+        .attr('font-family', 'Inter, sans-serif')
+        .attr('text-anchor', 'end')
+        .text('Less');
+
+    // Legend squares
+    const legendSquares = legend.selectAll('.legend-square')
+        .data(legendData)
+        .enter()
+        .append('rect')
+        .attr('class', 'legend-square')
+        .attr('width', 10)
+        .attr('height', 10)
+        .attr('x', (d, i) => i * 12)
+        .attr('y', 0)
+        .attr('rx', 2)
+        .attr('ry', 2)
+        .attr('fill', d => colors[d.level])
+        .attr('stroke', '#121212')
+        .attr('stroke-width', 0.5);
+
+    // Legend end label
+    legend.append('text')
+        .attr('class', 'legend-end')
+        .attr('x', legendData.length * 12 + 5)
+        .attr('y', 8)
+        .attr('font-size', '10px')
+        .attr('fill', '#9ca3af')
+        .attr('font-family', 'Inter, sans-serif')
+        .text('More');
 }
 
 /**

@@ -15,8 +15,11 @@ import { buildDashboardHtml } from '../../src/webview/html';
 
 describe('HTML/CSP Builder', () => {
   const mockOptions = {
-    cssUri: 'vscode-webview://123/media/dashboard.css',
-    jsUri: 'vscode-webview://123/media/dashboard.js',
+    patternsCssUri: 'vscode-webview://123/media/dashboard/patterns/patterns.css',
+    calendar3dCssUri: 'vscode-webview://123/media/dashboard/calendar/calendar-3d.css',
+    jsUri: 'vscode-webview://123/media/dashboard/main.js',
+    calendar3dJsUri: 'vscode-webview://123/media/dashboard/calendar/calendar-3d.js',
+    d3Uri: 'vscode-webview://123/media/vendor/d3.min.js',
     cspSource: 'vscode-webview://123',
     nonce: 'test-nonce-123'
   };
@@ -87,9 +90,14 @@ describe('HTML/CSP Builder', () => {
   });
 
   describe('resource URIs', () => {
-    it('should replace CSS URI placeholder', () => {
-      expect(html).to.include(`href="${mockOptions.cssUri}"`);
-      expect(html).to.not.include('${cssUri}');
+    it('should replace Patterns CSS URI placeholder', () => {
+      expect(html).to.include(`href="${mockOptions.patternsCssUri}"`);
+      expect(html).to.not.include('${patternsCssUri}');
+    });
+
+    it('should replace Calendar 3D CSS URI placeholder', () => {
+      expect(html).to.include(`href="${mockOptions.calendar3dCssUri}"`);
+      expect(html).to.not.include('${calendar3dCssUri}');
     });
 
     it('should replace JS URI placeholder', () => {

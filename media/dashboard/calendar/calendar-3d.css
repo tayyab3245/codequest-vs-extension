@@ -1,0 +1,187 @@
+/**
+ * CodeQuest Coach - Modern 3D Calendar Neumorphic Theme
+ * Extracted from self-contained calendar design
+ */
+
+/* Using Inter font from Google Fonts for a modern look */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+:root {
+    --calendar-background: #2c3038;
+    --calendar-light-shadow: #353a43;
+    --calendar-dark-shadow: #23272d;
+    --calendar-text-color: #bdc1c6;
+    --calendar-accent-color: #7b68ee;
+}
+
+/* Calendar Header */
+.calendar-3d-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.calendar-3d-title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: var(--calendar-text-color);
+}
+
+/* Custom Dark Neumorphic Dropdown Styles */
+.calendar-3d-dropdown {
+    position: relative;
+    width: 120px;
+}
+
+.calendar-3d-dropdown-button {
+    background: var(--calendar-background);
+    color: var(--calendar-text-color);
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 5px 5px 10px var(--calendar-dark-shadow), -5px -5px 10px var(--calendar-light-shadow);
+}
+
+.calendar-3d-dropdown-button:active, 
+.calendar-3d-dropdown-button.open {
+    box-shadow: inset 5px 5px 10px var(--calendar-dark-shadow), inset -5px -5px 10px var(--calendar-light-shadow);
+}
+
+.calendar-3d-dropdown-button .arrow {
+    width: 1rem;
+    height: 1rem;
+    color: #9ca3af;
+    transition: transform 0.2s ease;
+}
+
+.calendar-3d-dropdown-button.open .arrow {
+    transform: rotate(180deg);
+}
+
+.calendar-3d-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    background: var(--calendar-background);
+    border-radius: 10px;
+    box-shadow: 5px 5px 10px var(--calendar-dark-shadow), -5px -5px 10px var(--calendar-light-shadow);
+    z-index: 10;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+.calendar-3d-dropdown-menu.show {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+.calendar-3d-dropdown-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--calendar-text-color);
+    transition: all 0.2s ease;
+}
+
+.calendar-3d-dropdown-item:hover {
+    background-color: var(--calendar-accent-color);
+    color: #fff;
+}
+
+/* Calendar Wrapper for Scrolling */
+.calendar-3d-wrapper {
+    overflow-x: auto;
+    padding-bottom: 10px; /* Space for scrollbar */
+    margin-bottom: -10px; /* Counteract padding */
+    scrollbar-width: thin;
+    scrollbar-color: var(--calendar-light-shadow) var(--calendar-dark-shadow);
+}
+
+.calendar-3d-wrapper::-webkit-scrollbar {
+    height: 8px;
+}
+
+.calendar-3d-wrapper::-webkit-scrollbar-track {
+    background: var(--calendar-dark-shadow);
+    border-radius: 4px;
+}
+
+.calendar-3d-wrapper::-webkit-scrollbar-thumb {
+    background-color: var(--calendar-light-shadow);
+    border-radius: 4px;
+    border: 2px solid var(--calendar-dark-shadow);
+}
+
+/* D3 SVG Styles */
+.calendar-3d-svg-container {
+    min-width: 855px; 
+}
+
+.calendar-3d-svg {
+    width: 100%;
+    height: auto;
+    max-height: 160px;
+}
+
+.calendar-3d-month-label, 
+.calendar-3d-weekday-label {
+    fill: var(--calendar-text-color);
+    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+}
+
+.calendar-3d-day {
+    transition: fill 0.3s ease;
+}
+
+.calendar-3d-grid-background {
+    fill: var(--calendar-background);
+    stroke: var(--calendar-dark-shadow);
+    stroke-width: 0.5;
+}
+
+/* Calendar Tooltip */
+#calendar-3d-tooltip {
+    position: absolute;
+    display: none;
+    background-color: var(--calendar-background);
+    color: var(--calendar-text-color);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 5px 5px 10px var(--calendar-dark-shadow), -5px -5px 10px var(--calendar-light-shadow);
+}
+
+/* Legend Styles */
+.calendar-3d-legend {
+    font-family: 'Inter', sans-serif;
+}
+
+.calendar-3d-legend text {
+    fill: var(--calendar-text-color);
+    font-size: 10px;
+}
+
+.calendar-3d-legend .legend-square {
+    stroke: var(--calendar-dark-shadow);
+    stroke-width: 0.5;
+}

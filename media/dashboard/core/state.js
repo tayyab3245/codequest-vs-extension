@@ -7,6 +7,12 @@ export const vscodeState = {
   vscode: typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : { postMessage() {} }
 };
 
+console.log('🔌 VS Code API state:', {
+  acquireVsCodeApiExists: typeof acquireVsCodeApi === 'function',
+  vscodeObjectExists: !!vscodeState.vscode,
+  vscodePostMessageExists: typeof vscodeState.vscode.postMessage === 'function'
+});
+
 // Global app state (unchanged structure)
 export const state = {
   currentProblem: null,
@@ -16,7 +22,8 @@ export const state = {
   filter: 'all',
   patternStats: [],
   session: { running: false, todayMinutes: 0 },
-  calendar: { dailyMinutes: {} }
+  calendar: { dailyMinutes: {}, dailySolved: {} },
+  calendarView: 'solved' // 'solved' or 'time'
 };
 
 // Real catalog data
@@ -66,6 +73,18 @@ export function addSolvedKey(key) {
 
 export function isSolvedKey(key) {
   return state.solvedKeys.includes(key);
+}
+
+export function toggleCalendarView() {
+  state.calendarView = state.calendarView === 'solved' ? 'time' : 'solved';
+  emit('calendar-view-change', state.calendarView);
+}
+
+export function setCalendarView(view) {
+  if (view === 'solved' || view === 'time') {
+    state.calendarView = view;
+    emit('calendar-view-change', state.calendarView);
+  }
 }
 
 // Pattern display names mapping (unchanged)

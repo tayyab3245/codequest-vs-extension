@@ -5,9 +5,11 @@
 import { vscodeState } from './state.js';
 
 export function postMessage(payload) {
+  console.log('📤 Sending message to extension:', payload);
   try {
     vscodeState.vscode.postMessage(payload);
+    console.log('✅ Message sent successfully');
   } catch (e) {
-    console.warn('postMessage failed', e, payload);
+    console.error('❌ postMessage failed:', e, payload);
   }
 }

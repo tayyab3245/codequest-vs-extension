@@ -37,6 +37,7 @@ export interface SessionInfo {
 
 export interface CalendarData {
   dailyMinutes: Record<string, number>; // 'YYYY-MM-DD' -> minutes
+  dailySolved: Record<string, number>;  // 'YYYY-MM-DD' -> solved count
 }
 
 export interface ExtensionState {

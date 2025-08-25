@@ -25,10 +25,15 @@ export function getPatternProblems(patternKey) {
 export function sortProblemsForSegments(arr) {
   const order = { Easy: 0, Medium: 1, Hard: 2 };
   return [...arr].sort((a, b) => {
+    // Primary sort: by LeetCode difficulty (Easy → Medium → Hard)
     const da = order[normDifficulty(a.difficulty)], db = order[normDifficulty(b.difficulty)];
     if (da !== db) return da - db;
+    
+    // Secondary sort: by title for consistent ordering within same difficulty
     const ta = (a.title || '').localeCompare(b.title || '');
-    if (ta) return ta;
+    if (ta !== 0) return ta;
+    
+    // Tertiary sort: by slug as final tiebreaker
     return (a.slug || '').localeCompare(b.slug || '');
   });
 }

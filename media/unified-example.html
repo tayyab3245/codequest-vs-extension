@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --background: #2c3038;
+            --light-shadow: #353a43;
+            --dark-shadow: #23272d;
+            --text-color: #bdc1c6;
+            --accent-color-1: #6a5acd; /* SlateBlue */
+            --accent-color-2: #7b68ee; /* MediumSlateBlue */
+            --status-unsolved: #e5a00d;
+            --status-attempted: #5294e2;
+            --status-solved: #16d374;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .dashboard-panel {
+            background-color: var(--background);
+            padding: 2.5rem;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 900px;
+            box-shadow: 9px 9px 16px var(--dark-shadow), -9px -9px 16px var(--light-shadow);
+        }
+
+        .divider {
+            height: 1px;
+            width: 100%;
+            background: linear-gradient(to right, var(--dark-shadow), var(--light-shadow), var(--dark-shadow));
+            margin: 2.5rem 0;
+            border: none;
+        }
+
+        /* --- Patterns Section --- */
+        .patterns-section .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 0 0.5rem;
+        }
+
+        .patterns-section .main-header h2 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .legend-item .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            box-shadow: 2px 2px 4px var(--dark-shadow), -2px -2px 4px var(--light-shadow);
+        }
+        
+        .patterns-paginator {
+            overflow: hidden;
+        }
+
+        .patterns-pages-container {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .patterns-page {
+            width: 100%;
+            flex-shrink: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 2rem;
+            gap: 1rem;
+        }
+
+        .page-indicator-bar {
+            display: flex;
+            background-color: var(--background);
+            box-shadow: inset 3px 3px 6px var(--dark-shadow), inset -3px -3px 6px var(--light-shadow);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .page-segment {
+            width: 40px;
+            height: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .page-segment.active {
+            background-color: #ffffff;
+            box-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff;
+        }
+
+        #page-indicator {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            min-width: 50px;
+            text-align: center;
+        }
+
+
+        .pattern-header-clickable {
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .pattern-header-clickable:hover {
+            background-color: var(--dark-shadow);
+        }
+
+        .pattern-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+            color: var(--text-color);
+        }
+
+        .segmented-bar {
+            display: flex;
+            gap: 4px;
+            height: 8px;
+            width: 100%;
+        }
+
+        .segment {
+            flex-grow: 1;
+            border-radius: 4px;
+            background-color: var(--dark-shadow);
+            box-shadow: inset 2px 2px 4px #23272d, inset -2px -2px 4px #353a43;
+        }
+        
+        .pattern[data-progress="1"] .segment:nth-child(-n+1),
+        .pattern[data-progress="2"] .segment:nth-child(-n+2),
+        .pattern[data-progress="3"] .segment:nth-child(-n+3),
+        .pattern[data-progress="4"] .segment:nth-child(-n+4),
+        .pattern[data-progress="5"] .segment:nth-child(-n+5) {
+            background: linear-gradient(145deg, var(--accent-color-2), var(--accent-color-1));
+            box-shadow: none;
+        }
+
+        .questions-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out;
+            padding-left: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .question-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid var(--dark-shadow);
+        }
+        .question-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+        .status-indicator.unsolved { background-color: var(--status-unsolved); }
+        .status-indicator.attempted { background-color: var(--status-attempted); }
+        .status-indicator.solved { background-color: var(--status-solved); }
+
+        .question-title {
+            flex-grow: 1;
+            font-size: 0.875rem;
+        }
+        
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .timer {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 700;
+            font-size: 0.9rem;
+            width: 70px;
+            text-align: right;
+        }
+
+        .action-btn {
+            background: var(--background);
+            color: var(--text-color);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 3px 3px 6px var(--dark-shadow), -3px -3px 6px var(--light-shadow);
+        }
+        
+        .solve-btn-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+        }
+        
+        .solve-btn-icon svg {
+            width: 16px;
+            height: 16px;
+            transition: color 0.2s ease;
+        }
+        
+        .solve-btn-icon.is-solved svg {
+            color: #e5484d;
+        }
+        
+        .solve-btn-icon:not(.is-solved) svg {
+             color: var(--status-solved);
+        }
+
+        .action-btn:active, .action-btn.running, .solve-btn-icon.is-solved {
+            box-shadow: inset 3px 3px 6px var(--dark-shadow), inset -3px -3px 6px var(--light-shadow);
+        }
+        
+        .action-btn.running {
+            color: var(--accent-color-2);
+        }
+
+        /* --- Calendar Section --- */
+        .calendar-section .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .calendar-section h2 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .custom-dropdown {
+            position: relative;
+            width: 120px;
+        }
+
+        .dropdown-button {
+            background: var(--background);
+            color: var(--text-color);
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            width: 100%;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 5px 5px 10px var(--dark-shadow), -5px -5px 10px var(--light-shadow);
+        }
+
+        .dropdown-button:active, .dropdown-button.open {
+            box-shadow: inset 5px 5px 10px var(--dark-shadow), inset -5px -5px 10px var(--light-shadow);
+        }
+        
+        .dropdown-button .arrow {
+            width: 1rem;
+            height: 1rem;
+            color: #9ca3af;
+            transition: transform 0.2s ease;
+        }
+
+        .dropdown-button.open .arrow {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            background: var(--background);
+            border-radius: 10px;
+            box-shadow: 5px 5px 10px var(--dark-shadow), -5px -5px 10px var(--light-shadow);
+            z-index: 10;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(-10px);
+            visibility: hidden;
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+        }
+
+        .dropdown-menu.show {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--accent-color-1);
+            color: #fff;
+        }
+
+        .calendar-wrapper {
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: -10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--light-shadow) var(--dark-shadow);
+        }
+        .calendar-wrapper::-webkit-scrollbar { height: 8px; }
+        .calendar-wrapper::-webkit-scrollbar-track { background: var(--dark-shadow); border-radius: 4px; }
+        .calendar-wrapper::-webkit-scrollbar-thumb { background-color: var(--light-shadow); border-radius: 4px; border: 2px solid var(--dark-shadow); }
+
+        #calendar-container { min-width: 855px; }
+        .calendar-svg { width: 100%; height: auto; max-height: 160px; }
+        .month-label, .weekday-label { fill: var(--text-color); font-size: 10px; font-family: 'Inter', sans-serif; }
+        .calendar-day { transition: fill 0.3s ease; }
+        .grid-background { fill: var(--background); stroke: var(--dark-shadow); stroke-width: 0.5; }
+
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-panel">
+        <div class="patterns-section">
+            <div class="main-header">
+                <h2>Algorithm Patterns</h2>
+                <div class="legend">
+                    <div class="legend-item"><span class="status-indicator unsolved"></span> Unsolved</div>
+                    <div class="legend-item"><span class="status-indicator attempted"></span> Attempted</div>
+                    <div class="legend-item"><span class="status-indicator solved"></span> Solved</div>
+                </div>
+            </div>
+            <div class="patterns-paginator">
+                <div class="patterns-pages-container" id="patterns-pages-container">
+                    <!-- Pages will be generated here -->
+                </div>
+            </div>
+            <div class="pagination-controls">
+                <div class="page-indicator-bar" id="page-indicator-bar">
+                    <!-- Segments generated by JS -->
+                </div>
+                <span id="page-indicator"></span>
+            </div>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="calendar-section">
+            <div class="header">
+                <h2>Activity Heatmap</h2>
+                <div class="custom-dropdown">
+                    <button class="dropdown-button" id="dropdownButton">
+                        <span id="selectedValue">Time</span>
+                        <svg class="arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="dropdown-item" data-value="time">Time</div>
+                        <div class="dropdown-item" data-value="solved">Solved</div>
+                    </div>
+                </div>
+            </div>
+            <div class="calendar-wrapper">
+                <div id="calendar-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- PATTERNS SCRIPT ---
+        const patternsData = [
+            { name: "Arrays & Hashing", questions: [{title: "Contains Duplicate", status: "solved"}, {title: "Valid Anagram", status: "solved"}, {title: "Two Sum", status: "attempted"}, {title: "Group Anagrams", status: "unsolved"}] },
+            { name: "Two Pointers", questions: [{title: "Valid Palindrome", status: "solved"}, {title: "Two Sum II", status: "solved"}, {title: "3Sum", status: "unsolved"}, {title: "Container With Most Water", status: "unsolved"}] },
+            { name: "Sliding Window", questions: [{title: "Best Time to Buy and Sell Stock", status: "solved"}, {title: "Longest Substring Without Repeating Characters", status: "solved"}, {title: "Longest Repeating Character Replacement", status: "solved"}, {title: "Permutation in String", status: "solved"}] },
+            { name: "Stack", questions: [{title: "Valid Parentheses", status: "solved"}, {title: "Min Stack", status: "attempted"}, {title: "Evaluate Reverse Polish Notation", status: "unsolved"}, {title: "Generate Parentheses", status: "unsolved"}] },
+            { name: "Binary Search", questions: [{title: "Binary Search", status: "solved"}, {title: "Search a 2D Matrix", status: "solved"}, {title: "Koko Eating Bananas", status: "solved"}, {title: "Find Minimum in Rotated Sorted Array", status: "unsolved"}] },
+            { name: "Linked List", questions: [{title: "Reverse Linked List", status: "solved"}, {title: "Merge Two Sorted Lists", status: "unsolved"}, {title: "Reorder List", status: "unsolved"}, {title: "Remove Nth Node From End of List", status: "unsolved"}] },
+            { name: "Trees", questions: [{title: "Invert Binary Tree", status: "solved"}, {title: "Maximum Depth of Binary Tree", status: "solved"}, {title: "Diameter of Binary Tree", status: "attempted"}, {title: "Balanced Binary Tree", status: "unsolved"}] },
+            { name: "Tries", questions: [{title: "Implement Trie", status: "solved"}, {title: "Design Add/Search Words", status: "unsolved"}, {title: "Word Search II", status: "unsolved"}, {title: "Extra Trie Problem", status: "unsolved"}] },
+            { name: "Heap / Priority Queue", questions: [{title: "Kth Largest Element", status: "solved"}, {title: "Last Stone Weight", status: "solved"}, {title: "K Closest Points to Origin", status: "unsolved"}, {title: "Task Scheduler", status: "unsolved"}] },
+            { name: "Backtracking", questions: [{title: "Subsets", status: "solved"}, {title: "Combination Sum", status: "attempted"}, {title: "Permutations", status: "unsolved"}, {title: "Word Search", status: "unsolved"}] },
+            { name: "Graphs", questions: [{title: "Number of Islands", status: "solved"}, {title: "Clone Graph", status: "solved"}, {title: "Pacific Atlantic Water Flow", status: "solved"}, {title: "Course Schedule", status: "solved"}] },
+            { name: "Dynamic Programming", questions: [{title: "Climbing Stairs", status: "solved"}, {title: "Coin Change", status: "attempted"}, {title: "Longest Increasing Subsequence", status: "unsolved"}, {title: "Word Break", status: "unsolved"}] },
+        ];
+        const timers = new Map();
+        const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>`;
+        const undoIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+        function stopTimer(questionId, btnEl) {
+            if (timers.has(questionId) && timers.get(questionId).intervalId) {
+                const timerState = timers.get(questionId);
+                clearInterval(timerState.intervalId);
+                timers.set(questionId, { ...timerState, intervalId: null });
+                if (btnEl) { btnEl.textContent = "Start"; btnEl.classList.remove('running'); }
+            }
+        }
+        function toggleTimer(questionId, timerEl, btnEl) {
+            if (timers.has(questionId) && timers.get(questionId).intervalId) {
+                stopTimer(questionId, btnEl);
+            } else {
+                const startTime = Date.now();
+                const initialSeconds = timers.has(questionId) ? timers.get(questionId).seconds : 0;
+                const intervalId = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    const currentSeconds = initialSeconds + elapsed;
+                    timers.set(questionId, { seconds: currentSeconds, intervalId });
+                    timerEl.textContent = formatTime(currentSeconds);
+                }, 1000);
+                timers.set(questionId, { seconds: initialSeconds, intervalId });
+                btnEl.textContent = "Stop";
+                btnEl.classList.add('running');
+            }
+        }
+        function updatePatternProgress(patternEl) {
+            const questions = patternEl.querySelectorAll('.question-item');
+            const solvedCount = Array.from(questions).filter(q => q.dataset.status === 'solved').length;
+            const progress = Math.floor(solvedCount / 4);
+            patternEl.setAttribute('data-progress', progress);
+        }
+        function createPatternElement(pattern) {
+            const patternEl = document.createElement('div');
+            patternEl.className = 'pattern';
+            const headerEl = document.createElement('div');
+            headerEl.className = 'pattern-header-clickable';
+            const titleEl = document.createElement('h3');
+            titleEl.className = 'pattern-title';
+            titleEl.textContent = pattern.name;
+            const barEl = document.createElement('div');
+            barEl.className = 'segmented-bar';
+            for (let i = 0; i < 5; i++) {
+                const segment = document.createElement('span');
+                segment.className = 'segment';
+                barEl.appendChild(segment);
+            }
+            headerEl.appendChild(titleEl);
+            headerEl.appendChild(barEl);
+            const questionsContainerEl = document.createElement('div');
+            questionsContainerEl.className = 'questions-container';
+            pattern.questions.forEach((q, index) => {
+                const questionId = `${pattern.name.replace(/\s/g, '-')}-${index}`;
+                const questionItemEl = document.createElement('div');
+                questionItemEl.className = 'question-item';
+                questionItemEl.dataset.status = q.status;
+                const statusIndicator = document.createElement('span');
+                statusIndicator.className = `status-indicator ${q.status}`;
+                const questionTitle = document.createElement('span');
+                questionTitle.className = 'question-title';
+                questionTitle.textContent = `B${Math.floor(index / 4) + 1} - ${q.title}`;
+                const actionsWrapper = document.createElement('div');
+                actionsWrapper.className = 'actions';
+                
+                const timerEl = document.createElement('span');
+                timerEl.className = 'timer';
+                timerEl.textContent = formatTime(0);
+
+                const startBtn = document.createElement('button');
+                startBtn.className = 'action-btn start-btn';
+                startBtn.textContent = 'Start';
+                startBtn.onclick = () => toggleTimer(questionId, timerEl, startBtn);
+
+                const solveBtn = document.createElement('button');
+                solveBtn.className = 'action-btn solve-btn-icon';
+                if (q.status === 'solved') {
+                    solveBtn.classList.add('is-solved');
+                    solveBtn.innerHTML = undoIconSVG;
+                } else {
+                    solveBtn.innerHTML = checkIconSVG;
+                }
+                solveBtn.onclick = () => {
+                    const isSolved = solveBtn.classList.toggle('is-solved');
+                    if (isSolved) {
+                        stopTimer(questionId, startBtn);
+                        statusIndicator.className = 'status-indicator solved';
+                        questionItemEl.dataset.status = 'solved';
+                        solveBtn.innerHTML = undoIconSVG;
+                    } else {
+                        statusIndicator.className = 'status-indicator unsolved';
+                        questionItemEl.dataset.status = 'unsolved';
+                        solveBtn.innerHTML = checkIconSVG;
+                    }
+                    updatePatternProgress(patternEl);
+                };
+                actionsWrapper.append(timerEl, startBtn, solveBtn);
+                questionItemEl.append(statusIndicator, questionTitle, actionsWrapper);
+                questionsContainerEl.appendChild(questionItemEl);
+            });
+            headerEl.addEventListener('click', () => {
+                if (questionsContainerEl.style.maxHeight) {
+                    questionsContainerEl.style.maxHeight = null;
+                } else {
+                    questionsContainerEl.style.maxHeight = questionsContainerEl.scrollHeight + "px";
+                }
+            });
+            patternEl.appendChild(headerEl);
+            patternEl.appendChild(questionsContainerEl);
+            updatePatternProgress(patternEl);
+            return patternEl;
+        }
+        
+        // --- PAGINATION SCRIPT ---
+        const patternsRoot = document.getElementById('patterns-pages-container');
+        const pageIndicatorBar = document.getElementById('page-indicator-bar');
+        const pageIndicator = document.getElementById('page-indicator');
+        const patternsPerPage = 6;
+        let currentPage = 0;
+        const totalPages = Math.ceil(patternsData.length / patternsPerPage);
+
+        function renderPages() {
+            patternsRoot.innerHTML = '';
+            for (let i = 0; i < totalPages; i++) {
+                const pageEl = document.createElement('div');
+                pageEl.className = 'patterns-page';
+                const pageData = patternsData.slice(i * patternsPerPage, (i + 1) * patternsPerPage);
+                pageData.forEach(pattern => {
+                    pageEl.appendChild(createPatternElement(pattern));
+                });
+                patternsRoot.appendChild(pageEl);
+            }
+            renderPaginationControls();
+            updatePagination();
+        }
+        
+        function renderPaginationControls() {
+            pageIndicatorBar.innerHTML = '';
+            for (let i = 0; i < totalPages; i++) {
+                const segment = document.createElement('div');
+                segment.className = 'page-segment';
+                segment.dataset.page = i;
+                segment.addEventListener('click', () => {
+                    currentPage = i;
+                    updatePagination();
+                });
+                pageIndicatorBar.appendChild(segment);
+            }
+        }
+
+        function updatePagination() {
+            pageIndicator.textContent = `${currentPage + 1} / ${totalPages}`;
+            patternsRoot.style.transform = `translateX(-${currentPage * 100}%)`;
+            
+            const segments = pageIndicatorBar.querySelectorAll('.page-segment');
+            segments.forEach((seg, index) => {
+                seg.classList.toggle('active', index === currentPage);
+            });
+        }
+        
+        renderPages();
+
+
+        // --- CALENDAR SCRIPT ---
+        const calendarState = {
+            calendar: {
+                dailyMinutes: { '2024-01-05': 25, '2024-01-12': 55, '2024-01-18': 80, '2024-02-01': 150, '2024-02-15': 10, '2024-03-10': 45, '2024-03-22': 90, '2024-04-07': 130, '2024-05-19': 20, '2024-06-02': 70, '2024-07-28': 100, }
+            }
+        };
+        function renderD3Calendar(containerEl, year, dataMap, viewMode = 'time') {
+            if (!containerEl || typeof d3 === 'undefined') { return; }
+            containerEl.innerHTML = '';
+            const cellSize = 12, cellGap = 3;
+            const padding = { top: 30, right: 20, bottom: 20, left: 40 };
+            const width = 53 * (cellSize + cellGap) + padding.left + padding.right;
+            const height = 7 * (cellSize + cellGap) + padding.top + padding.bottom;
+            const svg = d3.select(containerEl).append('svg').attr('class', 'calendar-svg').attr('viewBox', `0 0 ${width} ${height}`);
+            const g = svg.append('g').attr('transform', `translate(${padding.left}, ${padding.top})`);
+            const colorSchemes = {
+                solved: ['#353a43', '#0a5d3c', '#00844a', '#00ad5d', '#16d374'],
+                time: ['#353a43', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6']
+            };
+            const colorScale = d3.scaleQuantize().domain([0, 4]).range(colorSchemes[viewMode]);
+            const getActivityLevel = (value, mode) => {
+                if (!value || value <= 0) return 0;
+                if (mode === 'solved') {
+                    if (value === 1) return 1; if (value <= 3) return 2; if (value <= 5) return 3; return 4;
+                } else {
+                    if (value < 30) return 1; if (value < 60) return 2; if (value < 120) return 3; return 4;
+                }
+            };
+            const allDays = d3.timeDays(new Date(year, 0, 1), new Date(year + 1, 0, 1));
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            g.selectAll(".month-label").data(d3.timeMonths(new Date(year, 0, 1), new Date(year + 1, 0, 1))).enter().append("text").attr("class", "month-label").attr("x", d => d3.timeWeek.count(d3.timeYear(d), d) * (cellSize + cellGap)).attr("y", -10).text(d => monthNames[d.getMonth()]);
+            const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            g.selectAll(".weekday-label").data(d3.range(7)).enter().append("text").attr("class", "weekday-label").attr("x", -22).attr("y", d => d * (cellSize + cellGap) + cellSize / 1.5).attr("text-anchor", "middle").text(d => (d % 2 !== 0) ? weekdayLabels[d] : "");
+            const gridWidth = 53 * (cellSize + cellGap) - cellGap;
+            const gridHeight = 7 * (cellSize + cellGap) - cellGap;
+            g.append('rect').attr('class', 'grid-background').attr('x', -cellGap).attr('y', -cellGap).attr('width', gridWidth + cellGap * 2).attr('height', gridHeight + cellGap * 2).attr('rx', 6);
+            const dayRects = g.selectAll('.calendar-day').data(allDays).enter().append('rect').attr('class', 'calendar-day').attr('width', cellSize).attr('height', cellSize).attr('x', d => d3.timeWeek.count(d3.timeYear(d), d) * (cellSize + cellGap)).attr('y', d => d.getDay() * (cellSize + cellGap)).attr('rx', 3).attr('ry', 3).attr('fill', d => colorScale(getActivityLevel(dataMap[d3.timeFormat('%Y-%m-%d')(d)] || 0, viewMode))).attr('data-date', d => d3.timeFormat('%Y-%m-%d')(d));
+            addCalendarLegend(svg, colorScale, width - padding.right - 120, height - 15);
+            containerEl._d3Calendar = { dayRects, getActivityLevel, dataMap, viewMode, colorScale };
+        }
+        function addCalendarLegend(svg, colorScale, x, y) {
+            const legend = svg.append('g').attr('transform', `translate(${x}, ${y})`);
+            legend.append('text').attr('x', -5).attr('y', 8).attr('text-anchor', 'end').text('Less').style('fill', '#bdc1c6').style('font-size', '10px');
+            legend.selectAll('.legend-square').data(colorScale.range()).enter().append('rect').attr('width', 10).attr('height', 10).attr('x', (d, i) => i * 14).attr('y', 0).attr('rx', 2).attr('ry', 2).attr('fill', d => d).style('stroke', '#23272d').style('stroke-width', 0.5);
+            legend.append('text').attr('x', colorScale.range().length * 14 + 5).attr('y', 8).text('More').style('fill', '#bdc1c6').style('font-size', '10px');
+        }
+        function updateD3Calendar(containerEl, newDataMap, newViewMode) {
+            if (!containerEl || !containerEl._d3Calendar) { renderD3Calendar(containerEl, new Date().getFullYear(), newDataMap, newViewMode); return; }
+            const { dayRects, getActivityLevel } = containerEl._d3Calendar;
+            const colorSchemes = {
+                solved: ['#353a43', '#0a5d3c', '#00844a', '#00ad5d', '#16d374'],
+                time: ['#353a43', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6']
+            };
+            const newColorScale = d3.scaleQuantize().domain([0, 4]).range(colorSchemes[newViewMode]);
+            dayRects.transition().duration(500).attr('fill', d => newColorScale(getActivityLevel(newDataMap[d3.timeFormat('%Y-%m-%d')(d)] || 0, newViewMode)));
+            const svg = d3.select(containerEl).select('svg');
+            svg.select('.calendar-legend').remove();
+            const { width, height } = svg.node().viewBox.baseVal;
+            addCalendarLegend(svg, newColorScale, width - 20 - 120, height - 15);
+        }
+        const calendarContainer = document.getElementById('calendar-container');
+        const currentYear = new Date().getFullYear();
+        const minutesMap = calendarState?.calendar?.dailyMinutes || {};
+        renderD3Calendar(calendarContainer, currentYear, minutesMap, 'time');
+        const dropdownButton = document.getElementById('dropdownButton');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const selectedValue = document.getElementById('selectedValue');
+        dropdownButton.addEventListener('click', () => {
+            dropdownMenu.classList.toggle('show');
+            dropdownButton.classList.toggle('open');
+        });
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const view = item.getAttribute('data-value');
+                const text = item.textContent;
+                selectedValue.textContent = text;
+                const solvedMap = Object.keys(minutesMap).reduce((acc, key) => { acc[key] = Math.max(1, Math.round(minutesMap[key] / 15)); return acc; }, {});
+                const dataMap = view === 'time' ? minutesMap : solvedMap;
+                updateD3Calendar(calendarContainer, dataMap, view);
+                dropdownMenu.classList.remove('show');
+                dropdownButton.classList.remove('open');
+            });
+        });
+        window.addEventListener('click', (e) => {
+            if (!dropdownButton.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+                dropdownButton.classList.remove('open');
+            }
+        });
+    </script>
+</body>
+</html>

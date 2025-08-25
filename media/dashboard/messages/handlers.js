@@ -9,16 +9,31 @@ import { renderPatterns } from '../patterns/render.js';
 import { renderCalendar } from '../calendar/calendar.js';
 
 export function registerMessageHandlers() {
+  console.log('🔧 Registering message handlers');
   window.addEventListener('message', (event) => {
     const message = event.data;
+    console.log('📨 Message received:', {
+      command: message?.command,
+      type: message?.type,
+      hasData: !!message?.data,
+      messageKeys: Object.keys(message || {})
+    });
 
     // Special catalog pipeline (original used command === 'catalogData')
     if (message?.command === 'catalogData') {
+      console.log('📊 Catalog data received:', {
+        dataType: typeof message.data,
+        dataKeys: message.data ? Object.keys(message.data).length : 0,
+        sampleKeys: message.data ? Object.keys(message.data).slice(0, 3) : []
+      });
+      
       // also expose to patterns renderer for title initials (unchanged behavior)
       window.__catalogData__ = message.data;
       window.__catalogNames__ = {}; // optional mapping if you need it later
       // Try to map display names if available in your HTML constants
       setCatalogData(message.data);
+      
+      console.log('🎨 Re-rendering patterns after catalog received');
       renderPatterns();
       return;
     }

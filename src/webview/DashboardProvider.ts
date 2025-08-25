@@ -36,7 +36,10 @@ export class DashboardProvider implements vscode.WebviewViewProvider {
       patternStats: [],
       installedAt: this.installedAt,
       session: { running: false, todayMinutes: 0 },
-      calendar: { dailyMinutes: {} }
+      calendar: { 
+        dailyMinutes: {},
+        dailySolved: {} 
+      }
     };
 
     this.loadSolvedState();
@@ -70,7 +73,9 @@ export class DashboardProvider implements vscode.WebviewViewProvider {
 
   private loadSessionState(): void {
     const calendarData = this.context.globalState.get<Record<string, number>>('cq.calendar.v1', {});
+    const solvedData = this.context.globalState.get<Record<string, number>>('cq.calendar.solved.v1', {});
     this.state.calendar.dailyMinutes = calendarData;
+    this.state.calendar.dailySolved = solvedData;
 
     const today = new Date().toISOString().split('T')[0];
     this.state.session.todayMinutes = calendarData[today] || 0;
@@ -84,6 +89,7 @@ export class DashboardProvider implements vscode.WebviewViewProvider {
 
   private async saveCalendarData(): Promise<void> {
     await this.context.globalState.update('cq.calendar.v1', this.state.calendar.dailyMinutes);
+    await this.context.globalState.update('cq.calendar.solved.v1', this.state.calendar.dailySolved);
   }
 
   private getTodayKey(): string {
@@ -339,7 +345,10 @@ module.exports = solve;
   public async handleGetCatalog(): Promise<void> {
     try {
       const catalog = await this.catalogService.getCatalog();
-      this.webviewView?.webview.postMessage({ command: 'catalogData', data: catalog });
+      this.webviewView?.webview.postMessage({ 
+        type: 'catalogData', 
+        catalog: catalog 
+      });
     } catch (e) {
       console.error('Failed to load catalog:', e);
       vscode.window.showErrorMessage('Failed to load problem catalog');
@@ -464,10 +473,11 @@ module.exports = solve;
       } else {
         this.solvedCatalog[key] = new Date().toISOString();
         
-        // Add time to calendar when marking as solved (default 5 minutes)
+        // Add time and solved count to calendar when marking as solved
         const today = this.getTodayKey();
         const minutesToAdd = 5; // Default time credit for solving a problem
         this.state.calendar.dailyMinutes[today] = (this.state.calendar.dailyMinutes[today] || 0) + minutesToAdd;
+        this.state.calendar.dailySolved[today] = (this.state.calendar.dailySolved[today] || 0) + 1;
         this.state.session.todayMinutes = this.state.calendar.dailyMinutes[today];
         await this.saveCalendarData();
       }
@@ -507,7 +517,7 @@ module.exports = solve;
       patternStats: [],
       installedAt: this.state.installedAt,
       session: { running: false, todayMinutes: 0 },
-      calendar: { dailyMinutes: {} },
+      calendar: { dailyMinutes: {}, dailySolved: {} },
       ...overrides
     };
   }
@@ -578,6 +588,11 @@ module.exports = solve;
               '2025-08-15': 30,
               '2025-08-16': 45,
               '2025-08-17': 45
+            },
+            dailySolved: {
+              '2025-08-15': 2,
+              '2025-08-16': 3,
+              '2025-08-17': 1
             }
           }
         });
@@ -608,17 +623,26 @@ module.exports = solve;
   // ---------- HTML & utilities ----------
 
   private sendStateUpdate(): void {
-    this.webview?.postMessage({ type: 'updateState', data: this.state });
+    this.webview?.postMessage({ type: 'state', ...this.state });
   }
 
   private getHtmlForWebview(webview: vscode.Webview): string {
     const nonce = crypto.randomBytes(16).toString('base64');
-    const cssUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard.css')
+    // Pattern CSS
+    const patternsCssUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard', 'patterns', 'patterns.css')
+    );
+    // 3D Calendar CSS
+    const calendar3dCssUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard', 'calendar', 'calendar-3d.css')
     );
     // App bundle
     const jsUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard', 'main.js')
+    );
+    // 3D Calendar JS
+    const calendar3dJsUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard', 'calendar', 'calendar-3d.js')
     );
     // D3 library for calendar
     const d3Uri = webview.asWebviewUri(
@@ -627,8 +651,10 @@ module.exports = solve;
     const cspSource = webview.cspSource;
 
     return buildDashboardHtml({
-      cssUri: cssUri.toString(),
+      patternsCssUri: patternsCssUri.toString(),
+      calendar3dCssUri: calendar3dCssUri.toString(),
       jsUri: jsUri.toString(),
+      calendar3dJsUri: calendar3dJsUri.toString(),
       d3Uri: d3Uri.toString(),
       cspSource,
       nonce

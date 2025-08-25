@@ -628,21 +628,9 @@ module.exports = solve;
 
   private getHtmlForWebview(webview: vscode.Webview): string {
     const nonce = crypto.randomBytes(16).toString('base64');
-    // Pattern CSS
-    const patternsCssUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard', 'patterns', 'patterns.css')
-    );
-    // 3D Calendar CSS
-    const calendar3dCssUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard', 'calendar', 'calendar-3d.css')
-    );
-    // App bundle
+    // App bundle (main.js contains all functionality)
     const jsUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard', 'main.js')
-    );
-    // 3D Calendar JS
-    const calendar3dJsUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, 'media', 'dashboard', 'calendar', 'calendar-3d.js')
     );
     // D3 library for calendar
     const d3Uri = webview.asWebviewUri(
@@ -651,10 +639,10 @@ module.exports = solve;
     const cspSource = webview.cspSource;
 
     return buildDashboardHtml({
-      patternsCssUri: patternsCssUri.toString(),
-      calendar3dCssUri: calendar3dCssUri.toString(),
+      patternsCssUri: '', // CSS now inline in HTML template
+      calendar3dCssUri: '', // CSS now inline in HTML template  
       jsUri: jsUri.toString(),
-      calendar3dJsUri: calendar3dJsUri.toString(),
+      calendar3dJsUri: '', // Calendar JS now in main.js
       d3Uri: d3Uri.toString(),
       cspSource,
       nonce

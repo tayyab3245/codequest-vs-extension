@@ -434,8 +434,8 @@ function renderD3Calendar(containerEl, year, dataMap, viewMode = 'time') {
         .attr('transform', `translate(${padding.left}, ${padding.top})`);
     
     const colorSchemes = {
-        time: ['#2c3038', '#5a4a7c', '#7b68ee', '#9370db', '#ffffff'],
-        solved: ['#2c3038', '#4a5d23', '#6b8e23', '#9acd32', '#adff2f']
+        solved: ['#353a43', '#0a5d3c', '#00844a', '#00ad5d', '#16d374'],
+        time: ['#353a43', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6']
     };
     
     const colorScale = d3.scaleQuantize()
@@ -443,14 +443,17 @@ function renderD3Calendar(containerEl, year, dataMap, viewMode = 'time') {
         .range(colorSchemes[viewMode]);
     
     const getActivityLevel = (value, mode) => {
-        if (mode === 'time') {
-            if (value === 0) return 0;
-            if (value <= 30) return 1;
-            if (value <= 60) return 2;
-            if (value <= 120) return 3;
+        if (!value || value <= 0) return 0;
+        if (mode === 'solved') {
+            if (value === 1) return 1;
+            if (value <= 3) return 2;
+            if (value <= 5) return 3;
             return 4;
         } else {
-            return Math.min(value, 4);
+            if (value < 30) return 1;
+            if (value < 60) return 2;
+            if (value < 120) return 3;
+            return 4;
         }
     };
     
@@ -547,8 +550,8 @@ function updateD3Calendar(containerEl, newDataMap, newViewMode) {
     
     const { dayRects, getActivityLevel } = containerEl._d3Calendar;
     const colorSchemes = {
-        time: ['#2c3038', '#5a4a7c', '#7b68ee', '#9370db', '#ffffff'],
-        solved: ['#2c3038', '#4a5d23', '#6b8e23', '#9acd32', '#adff2f']
+        solved: ['#353a43', '#0a5d3c', '#00844a', '#00ad5d', '#16d374'],
+        time: ['#353a43', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6']
     };
     
     const newColorScale = d3.scaleQuantize()

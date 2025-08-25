@@ -42,20 +42,15 @@ const patternDisplayNames = {
   'sliding-window': 'Sliding Window',
   'stack': 'Stack',
   'binary-search': 'Binary Search',
+  'graph': 'Graph',
   'linked-list': 'Linked List',
-  'trees': 'Trees',
-  'tries': 'Tries',
-  'heap-priority-queue': 'Heap / Priority Queue',
-  'backtracking': 'Backtracking',
-  'graphs': 'Graphs',
-  'graph': 'Graphs', // backward compatibility
-  'advanced-graphs': 'Advanced Graphs',
-  '1-d-dynamic-programming': '1-D Dynamic Programming',
-  '2-d-dynamic-programming': '2-D Dynamic Programming',
-  'greedy': 'Greedy',
+  'tree': 'Tree',
   'intervals': 'Intervals',
-  'math-and-geometry': 'Math & Geometry',
-  'bit-manipulation': 'Bit Manipulation'
+  'heap': 'Heap / Priority Queue',
+  'dynamic-programming': 'Dynamic Programming',
+  'backtracking': 'Backtracking',
+  'prefix-sum': 'Prefix Sum',
+  'trie': 'Trie'
 };
 
 // Preview mode state

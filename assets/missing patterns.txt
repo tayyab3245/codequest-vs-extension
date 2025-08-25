@@ -1,0 +1,218 @@
+# Build the 8 new patterns with 20 problems each, following the user's catalog format:
+# fields: pattern, title, slug, band, url
+
+def e(pattern, title, slug, band):
+    return {
+        "pattern": pattern,
+        "title": title,
+        "slug": slug,
+        "band": band,
+        "url": f"https://leetcode.com/problems/{slug}/"
+    }
+
+blocks = []
+
+# 1) linked-list
+blocks += [
+    e("linked-list","Reverse Linked List","reverse-linked-list",1),
+    e("linked-list","Middle of the Linked List","middle-of-the-linked-list",1),
+    e("linked-list","Merge Two Sorted Lists","merge-two-sorted-lists",1),
+    e("linked-list","Linked List Cycle","linked-list-cycle",1),
+    e("linked-list","Remove Nth Node From End of List","remove-nth-node-from-end-of-list",2),
+    e("linked-list","Palindrome Linked List","palindrome-linked-list",2),
+    e("linked-list","Intersection of Two Linked Lists","intersection-of-two-linked-lists",2),
+    e("linked-list","Swap Nodes in Pairs","swap-nodes-in-pairs",2),
+    e("linked-list","Add Two Numbers","add-two-numbers",3),
+    e("linked-list","Odd Even Linked List","odd-even-linked-list",3),
+    e("linked-list","Rotate List","rotate-list",3),
+    e("linked-list","Copy List with Random Pointer","copy-list-with-random-pointer",3),
+    e("linked-list","Linked List Cycle II","linked-list-cycle-ii",3),
+    e("linked-list","Sort List","sort-list",3),
+    e("linked-list","Reorder List","reorder-list",3),
+    e("linked-list","Remove Duplicates from Sorted List II","remove-duplicates-from-sorted-list-ii",3),
+    e("linked-list","Reverse Nodes in k-Group","reverse-nodes-in-k-group",4),
+    e("linked-list","LRU Cache","lru-cache",4),  # commonly solved with DLL + hashmap
+    e("linked-list","Flatten a Multilevel Doubly Linked List","flatten-a-multilevel-doubly-linked-list",4),
+    e("linked-list","Merge k Sorted Lists","merge-k-sorted-lists",5),
+]
+
+# 2) tree (incl. bst)
+blocks += [
+    e("tree","Maximum Depth of Binary Tree","maximum-depth-of-binary-tree",1),
+    e("tree","Invert Binary Tree","invert-binary-tree",1),
+    e("tree","Same Tree","same-tree",1),
+    e("tree","Diameter of Binary Tree","diameter-of-binary-tree",2),
+    e("tree","Balanced Binary Tree","balanced-binary-tree",2),
+    e("tree","Binary Tree Level Order Traversal","binary-tree-level-order-traversal",2),
+    e("tree","Binary Tree Right Side View","binary-tree-right-side-view",2),
+    e("tree","Path Sum","path-sum",2),
+    e("tree","Lowest Common Ancestor of a Binary Tree","lowest-common-ancestor-of-a-binary-tree",3),
+    e("tree","Validate Binary Search Tree","validate-binary-search-tree",3),
+    e("tree","Kth Smallest Element in a BST","kth-smallest-element-in-a-bst",3),
+    e("tree","Construct Binary Tree from Preorder and Inorder Traversal","construct-binary-tree-from-preorder-and-inorder-traversal",3),
+    e("tree","Binary Tree Zigzag Level Order Traversal","binary-tree-zigzag-level-order-traversal",3),
+    e("tree","Sum of Left Leaves","sum-of-left-leaves",3),
+    e("tree","Path Sum II","path-sum-ii",3),
+    e("tree","Serialize and Deserialize Binary Tree","serialize-and-deserialize-binary-tree",4),
+    e("tree","Recover Binary Search Tree","recover-binary-search-tree",4),
+    e("tree","Populating Next Right Pointers in Each Node","populating-next-right-pointers-in-each-node",4),
+    e("tree","Count Good Nodes in Binary Tree","count-good-nodes-in-binary-tree",4),
+    e("tree","Binary Tree Maximum Path Sum","binary-tree-maximum-path-sum",5),
+]
+
+# 3) intervals
+blocks += [
+    e("intervals","Merge Intervals","merge-intervals",2),
+    e("intervals","Insert Interval","insert-interval",3),
+    e("intervals","Non-overlapping Intervals","non-overlapping-intervals",3),
+    e("intervals","Interval List Intersections","interval-list-intersections",2),
+    e("intervals","Meeting Rooms (LeetCode 252)","meeting-rooms",2),  # premium; keep band low; user may still practice
+    e("intervals","Minimum Number of Arrows to Burst Balloons","minimum-number-of-arrows-to-burst-balloons",2),
+    e("intervals","Summary Ranges","summary-ranges",1),
+    e("intervals","Find Right Interval","find-right-interval",3),
+    e("intervals","Video Stitching","video-stitching",3),
+    e("intervals","Remove Covered Intervals","remove-covered-intervals",3),
+    e("intervals","Minimum Interval to Include Each Query","minimum-interval-to-include-each-query",5),
+    e("intervals","Range Addition","range-addition",3),
+    e("intervals","Car Pooling","car-pooling",2),
+    e("intervals","Employee Free Time","employee-free-time",4),  # premium
+    e("intervals","Subarray Product Less Than K","subarray-product-less-than-k",2),  # two-pointers but interval-ish
+    e("intervals","Data Stream as Disjoint Intervals","data-stream-as-disjoint-intervals",5),
+    e("intervals","Merge Sorted Array","merge-sorted-array",1),
+    e("intervals","My Calendar I","my-calendar-i",3),
+    e("intervals","My Calendar II","my-calendar-ii",4),
+    e("intervals","My Calendar III","my-calendar-iii",5),
+]
+
+# 4) heap / priority-queue
+blocks += [
+    e("heap","Kth Largest Element in an Array","kth-largest-element-in-an-array",2),
+    e("heap","Top K Frequent Elements","top-k-frequent-elements",2),
+    e("heap","Last Stone Weight","last-stone-weight",1),
+    e("heap","Kth Largest Element in a Stream","kth-largest-element-in-a-stream",1),
+    e("heap","Find K Closest Elements","find-k-closest-elements",2),
+    e("heap","Task Scheduler","task-scheduler",3),
+    e("heap","Sort Characters By Frequency","sort-characters-by-frequency",2),
+    e("heap","Reorganize String","reorganize-string",3),
+    e("heap","Smallest Number in Infinite Set","smallest-number-in-infinite-set",2),
+    e("heap","Maximum Subsequence Score","maximum-subsequence-score",4),
+    e("heap","Furthest Building You Can Reach","furthest-building-you-can-reach",3),
+    e("heap","Reduce Array Size to The Half","reduce-array-size-to-the-half",2),
+    e("heap","IPO","ipo",4),
+    e("heap","Find Median from Data Stream","find-median-from-data-stream",5),
+    e("heap","Design Twitter","design-twitter",4),
+    e("heap","Minimum Cost to Hire K Workers","minimum-cost-to-hire-k-workers",4),
+    e("heap","Sliding Window Median","sliding-window-median",5),
+    e("heap","Swim in Rising Water","swim-in-rising-water",5),
+    e("heap","Shortest Path to Get All Keys","shortest-path-to-get-all-keys",5),
+    e("heap","The Skyline Problem","the-skyline-problem",5),
+]
+
+# 5) dynamic-programming
+blocks += [
+    e("dynamic-programming","Climbing Stairs","climbing-stairs",1),
+    e("dynamic-programming","House Robber","house-robber",1),
+    e("dynamic-programming","House Robber II","house-robber-ii",2),
+    e("dynamic-programming","Unique Paths","unique-paths",1),
+    e("dynamic-programming","Unique Paths II","unique-paths-ii",2),
+    e("dynamic-programming","Coin Change","coin-change",2),
+    e("dynamic-programming","Coin Change II","coin-change-ii",3),
+    e("dynamic-programming","Longest Increasing Subsequence","longest-increasing-subsequence",3),
+    e("dynamic-programming","Longest Common Subsequence","longest-common-subsequence",3),
+    e("dynamic-programming","Edit Distance","edit-distance",4),
+    e("dynamic-programming","Partition Equal Subset Sum","partition-equal-subset-sum",2),
+    e("dynamic-programming","Target Sum","target-sum",3),
+    e("dynamic-programming","Word Break","word-break",3),
+    e("dynamic-programming","Decode Ways","decode-ways",3),
+    e("dynamic-programming","Maximum Product Subarray","maximum-product-subarray",2),
+    e("dynamic-programming","Best Time to Buy and Sell Stock with Cooldown","best-time-to-buy-and-sell-stock-with-cooldown",3),
+    e("dynamic-programming","Longest Palindromic Substring","longest-palindromic-substring",3),
+    e("dynamic-programming","Palindromic Substrings","palindromic-substrings",2),
+    e("dynamic-programming","Jump Game","jump-game",2),
+    e("dynamic-programming","Jump Game II","jump-game-ii",3),
+]
+
+# 6) backtracking
+blocks += [
+    e("backtracking","Subsets","subsets",2),
+    e("backtracking","Subsets II","subsets-ii",3),
+    e("backtracking","Permutations","permutations",2),
+    e("backtracking","Permutations II","permutations-ii",3),
+    e("backtracking","Combination Sum","combination-sum",2),
+    e("backtracking","Combination Sum II","combination-sum-ii",3),
+    e("backtracking","Combination Sum III","combination-sum-iii",3),
+    e("backtracking","Letter Combinations of a Phone Number","letter-combinations-of-a-phone-number",2),
+    e("backtracking","Generate Parentheses","generate-parentheses",2),
+    e("backtracking","Palindrome Partitioning","palindrome-partitioning",3),
+    e("backtracking","Word Search","word-search",3),
+    e("backtracking","Word Search II","word-search-ii",5),
+    e("backtracking","N-Queens","n-queens",4),
+    e("backtracking","Restore IP Addresses","restore-ip-addresses",3),
+    e("backtracking","Increasing Subsequences","increasing-subsequences",3),
+    e("backtracking","Beautiful Arrangement","beautiful-arrangement",3),
+    e("backtracking","Sudoku Solver","sudoku-solver",5),
+    e("backtracking","Gray Code","gray-code",2),
+    e("backtracking","Factor Combinations","factor-combinations",3),
+    e("backtracking","Combinations","combinations",2),
+]
+
+# 7) prefix-sum
+blocks += [
+    e("prefix-sum","Running Sum of 1d Array","running-sum-of-1d-array",1),
+    e("prefix-sum","Find Pivot Index","find-pivot-index",1),
+    e("prefix-sum","Subarray Sum Equals K","subarray-sum-equals-k",2),
+    e("prefix-sum","Continuous Subarray Sum","continuous-subarray-sum",3),
+    e("prefix-sum","Binary Subarrays With Sum","binary-subarrays-with-sum",2),
+    e("prefix-sum","Subarrays Divisible by K","subarray-sums-divisible-by-k",3),
+    e("prefix-sum","Count Number of Nice Subarrays","count-number-of-nice-subarrays",3),
+    e("prefix-sum","Maximum Subarray","maximum-subarray",1),
+    e("prefix-sum","Find the Highest Altitude","find-the-highest-altitude",1),
+    e("prefix-sum","Range Sum Query - Immutable","range-sum-query-immutable",1),
+    e("prefix-sum","Range Sum Query 2D - Immutable","range-sum-query-2d-immutable",2),
+    e("prefix-sum","Matrix Block Sum","matrix-block-sum",2),
+    e("prefix-sum","Minimum Size Subarray Sum","minimum-size-subarray-sum",2),
+    e("prefix-sum","Shortest Subarray with Sum at Least K","shortest-subarray-with-sum-at-least-k",5),
+    e("prefix-sum","Maximum Sum of Two Non-Overlapping Subarrays","maximum-sum-of-two-non-overlapping-subarrays",3),
+    e("prefix-sum","Sum of Subarray Minimums","sum-of-subarray-minimums",3),
+    e("prefix-sum","Number of Submatrices That Sum to Target","number-of-submatrices-that-sum-to-target",5),
+    e("prefix-sum","Max Consecutive Ones","max-consecutive-ones",1),
+    e("prefix-sum","Maximum Average Subarray I","maximum-average-subarray-i",1),
+    e("prefix-sum","Pivot Index (Redux)","find-pivot-index",1),
+]
+
+# 8) trie
+blocks += [
+    e("trie","Implement Trie (Prefix Tree)","implement-trie-prefix-tree",2),
+    e("trie","Design Add and Search Words Data Structure","design-add-and-search-words-data-structure",3),
+    e("trie","Replace Words","replace-words",2),
+    e("trie","Longest Word in Dictionary","longest-word-in-dictionary",2),
+    e("trie","Implement Magic Dictionary","implement-magic-dictionary",3),
+    e("trie","Word Search II","word-search-ii",5),
+    e("trie","Maximum XOR of Two Numbers in an Array","maximum-xor-of-two-numbers-in-an-array",3),
+    e("trie","Find Maximum XOR With an Element From Array","maximum-xor-with-an-element-from-array",4),
+    e("trie","Map Sum Pairs","map-sum-pairs",2),
+    e("trie","Trie (Delete Operation) – practice via Replace Words variants","replace-words",2),
+    e("trie","Stream of Characters","stream-of-characters",4),
+    e("trie","Word Squares","word-squares",4),
+    e("trie","Add and Search Word (duplicate slug allowed by your system?)","design-add-and-search-words-data-structure",3),
+    e("trie","Palindrome Pairs","palindrome-pairs",5),
+    e("trie","Lexicographical Numbers","lexicographical-numbers",2),
+    e("trie","Search Suggestions System","search-suggestions-system",3),
+    e("trie","Shortest Unique Prefix (simulate with dictionary mapping)","replace-words",2),
+    e("trie","Contacts (HackerRank-style) – simulate with Implement Trie","implement-trie-prefix-tree",2),
+    e("trie","Replace Words (again for practice sets)","replace-words",2),
+    e("trie","Prefix and Suffix Search","prefix-and-suffix-search",5),
+]
+
+# Save to a file
+patch = {"version": "1", "problems": blocks}
+out_path = "/mnt/data/catalog_patch_new_patterns.json"
+with open(out_path, "w") as f:
+    json.dump(patch, f, indent=2)
+
+# Also show a small preview as a dataframe (first 10 rows)
+df = pd.DataFrame(blocks[:10])
+import caas_jupyter_tools as cj
+cj.display_dataframe_to_user("Preview of first 10 entries (new patterns)", df)
+
+out_path

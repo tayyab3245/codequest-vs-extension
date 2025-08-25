@@ -11,7 +11,7 @@
 ## Features
 
 - **Visual Progress Dashboard** - Track your LeetCode journey with GitHub-style contribution heatmaps
-- **Pattern Mastery System** - Focus on the 6 essential coding patterns with structured learning paths  
+- **Pattern Mastery System** - Focus on 14 essential coding patterns with structured learning paths  
 - **Difficulty-Based Progress** - Easy/Medium/Hard tracking with visual indicators
 - **Session Analytics** - Monitor your practice consistency and improvement over time
 - **Real-time Sync** - Instantly updates as you solve problems in your workspace
@@ -30,17 +30,27 @@
 
 ## Pattern Categories
 
-CodeQuest recognizes 6 essential coding patterns including:
+CodeQuest recognizes 14 essential coding patterns including:
 - Arrays & Hashing
 - Two Pointers  
 - Sliding Window
-- Stack & Queues
+- Stack
 - Binary Search
-- Trees & Graphs
+- Graph
+- Linked List
+- Tree
+- Intervals
+- Heap / Priority Queue
+- Dynamic Programming
+- Backtracking
+- Prefix Sum
+- Trie
 
 ## Progress Tracking
 
 - **Daily Activity Heatmap** - Visualize your coding consistency
+- **Pattern Completion Status** - See which areas need more practice  
+- **Difficulty Distribution** - Balance your Easy/Medium/Hard problem solving
 - **Session History** - Track your practice sessions over time
 
 ## Known Issues
@@ -49,11 +59,9 @@ CodeQuest recognizes 6 essential coding patterns including:
 
 ## Future Enhancements
 
-- **AI-Powered Insights** - Get personalized recommendations based on your progress patterns
 - **Smart Problem Suggestions** - Intelligent next-problem recommendations  
 - **Performance Analytics** - Advanced metrics and learning insights
-- **Study Plan Generation** - Automated study schedules based on your goals
-- **Pattern Completion Status** - See which areas need more practice  
+- **Study Plan Generation** - Automated study schedules based on your goals  
 
 
 
@@ -65,4 +73,4 @@ This software is proprietary and confidential. See [LICENSE](LICENSE) for full t
 
 ---
 
-**Ready to master coding patterns?** Setup CodeQuest and transform your LeetCode practice into a visual, data-driven journey!
+**Ready to master coding patterns?** Setup CodeQuest and transform your LeetCode practice into a visual, data-driven journey.

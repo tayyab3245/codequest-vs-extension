@@ -67,7 +67,7 @@ interface ExtensionState {
   calendar: CalendarData;
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   console.log('CodeQuest Coach extension is activating...');
 
   // Initialize or get installation date
@@ -173,7 +173,19 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // No longer need workspace scanning or file watching since we use catalog-based system
+  // Add active text editor listener for automatic problem detection
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+      if (editor && editor.document) {
+        await dashboardProvider.handleActiveFileChange(editor.document.uri.fsPath);
+      }
+    })
+  );
+
+  // Check current active editor on startup
+  if (vscode.window.activeTextEditor) {
+    await dashboardProvider.handleActiveFileChange(vscode.window.activeTextEditor.document.uri.fsPath);
+  }
   
   console.log('CodeQuest Coach extension activated successfully');
 }
@@ -379,6 +391,25 @@ class DashboardProvider implements vscode.WebviewViewProvider {
   public handleWorkspaceChange(): void {
     this.state.workspacePath = this.getWorkspacePath();
     // No longer need to refresh problem count - using catalog system
+  }
+
+  public async handleActiveFileChange(filePath: string): Promise<void> {
+    // Import parseProblemPath at runtime to avoid circular dependencies
+    const { parseProblemPath } = await import('./lib/problemPath');
+    
+    const problemInfo = parseProblemPath(filePath);
+    
+    if (problemInfo) {
+      // Update current problem
+      this.state.currentProblem = problemInfo;
+      console.log(`CodeQuest: Detected problem - ${problemInfo.pattern}: ${problemInfo.name}`);
+    } else {
+      // Clear current problem if not a homework file
+      this.state.currentProblem = null;
+    }
+    
+    // Send state update to dashboard
+    this.sendStateUpdate();
   }
 
   public handleCommand(message: string): void {
@@ -643,7 +674,7 @@ module.exports = solve;
     const unsolvedProblems = this.state.problems.filter(p => !this.state.solvedKeys.includes(p.key));
     
     if (unsolvedProblems.length === 0) {
-      vscode.window.showInformationMessage('🎉 All problems are solved! Great work!');
+      vscode.window.showInformationMessage('All problems are solved! Great work!');
       return;
     }
     

@@ -136,24 +136,53 @@ function getPatternProblems(patternKey) {
   if (!entry) return [];
   if (Array.isArray(entry)) return entry;
   if (Array.isArray(entry.problems)) return entry.problems;
-  const e = entry[1] || entry.easy || entry.Easy || [];
-  const m = entry[2] || entry.medium || entry.Medium || [];
-  const h = entry[3] || entry.hard || entry.Hard || [];
-  return [
-    ...e.map(p => ({ ...p, difficulty: 'Easy' })),
-    ...m.map(p => ({ ...p, difficulty: 'Medium' })),
-    ...h.map(p => ({ ...p, difficulty: 'Hard' })),
-  ];
+  
+  // Handle new band-based structure from catalog service
+  const problems = [];
+  for (let band = 1; band <= 5; band++) {
+    const bandProblems = entry[band] || [];
+    problems.push(...bandProblems.map(p => ({ 
+      ...p, 
+      band: band,
+      difficulty: bandToDifficulty(band)
+    })));
+  }
+  
+  // Fallback to old structure
+  if (problems.length === 0) {
+    const e = entry.easy || entry.Easy || [];
+    const m = entry.medium || entry.Medium || [];
+    const h = entry.hard || entry.Hard || [];
+    problems.push(
+      ...e.map(p => ({ ...p, difficulty: 'Easy', band: p.band || 2 })),
+      ...m.map(p => ({ ...p, difficulty: 'Medium', band: p.band || 3 })),
+      ...h.map(p => ({ ...p, difficulty: 'Hard', band: p.band || 4 }))
+    );
+  }
+  
+  return problems;
 }
 
-// Sort Easy -> Medium -> Hard, then by title/slug
+// Convert band to difficulty (matches backend logic)
+function bandToDifficulty(band) {
+  if (band <= 2) return 'Easy';
+  if (band <= 4) return 'Medium';
+  return 'Hard';
+}
+
+// Sort by band first (1 -> 2 -> 3 -> 4 -> 5), then by title/slug
 function sortProblemsForSegments(arr) {
-  const order = { Easy: 0, Medium: 1, Hard: 2 };
   return [...arr].sort((a, b) => {
-    const da = order[normDifficulty(a.difficulty)], db = order[normDifficulty(b.difficulty)];
-    if (da !== db) return da - db;
+    // Primary sort: by band number (ascending)
+    const bandA = a.band || 3;
+    const bandB = b.band || 3;
+    if (bandA !== bandB) return bandA - bandB;
+    
+    // Secondary sort: by title
     const ta = (a.title || '').localeCompare(b.title || '');
     if (ta) return ta;
+    
+    // Tertiary sort: by slug
     return (a.slug || '').localeCompare(b.slug || '');
   });
 }
@@ -174,6 +203,7 @@ function buildSegments(patternKey) {
       ...baseProblem,
       slug: `${baseProblem.slug}-variant-${Math.floor(allProblems.length / baseProblems.length) + 1}`,
       title: `${baseProblem.title} (Variant ${Math.floor(allProblems.length / baseProblems.length) + 1})`,
+      band: baseProblem.band || 3, // Preserve band from base problem
       isVariant: true
     };
     allProblems.push(variant);
@@ -183,18 +213,22 @@ function buildSegments(patternKey) {
   if (allProblems.length === 0) {
     for (let i = 0; i < maxSegmentsPerPattern; i++) {
       const difficulties = ['Easy', 'Medium', 'Hard'];
-      const difficulty = difficulties[i % 3];
+      const bands = [1, 3, 4]; // Corresponding bands for each difficulty
+      const difficultyIndex = i % 3;
+      const difficulty = difficulties[difficultyIndex];
+      const band = bands[difficultyIndex];
       allProblems.push({
         slug: `${patternKey}-problem-${i + 1}`,
         title: `${patternDisplayNames[patternKey] || patternKey} Problem ${i + 1}`,
         difficulty: difficulty,
+        band: band,
         isGenerated: true
       });
     }
   }
   
-  // Take exactly 20 problems
-  const finalProblems = allProblems.slice(0, maxSegmentsPerPattern);
+  // Re-sort AFTER variant / generated fill so band ordering is preserved
+  const finalProblems = sortProblemsForSegments(allProblems).slice(0, maxSegmentsPerPattern);
   
   for (let i = 0; i < maxSegmentsPerPattern; i++) {
     const problem = finalProblems[i];
@@ -203,6 +237,7 @@ function buildSegments(patternKey) {
       slug: problem.slug,
       title: problem.title,
       difficulty: normDifficulty(problem.difficulty),
+      band: problem.band || 3, // Preserve band information
       solved: state.solvedKeys.includes(`${patternKey}/${problem.slug}`),
       empty: false,
       isVariant: problem.isVariant || false,
@@ -374,8 +409,12 @@ function renderQuestions(patternKey, segIndex, container) {
     ? `<button class="btn-solve" data-action="solve" data-pattern="${patternKey}" data-slug="${seg.slug}" data-index="${segIndex}">Mark Solved</button>` 
     : '';
 
+  // Get band information for indicator
+  const bandNumber = seg.band || 3; // fallback to band 3 if not available
+
   controls.innerHTML = `
     ${solveButtonHTML}
+    <span class="band-indicator">B-${bandNumber}</span>
     <span class="timer-display font-mono text-sm text-gray-400" data-timer-id="${problemId}">${formatTime(timerState.elapsedTime)}</span>
     <div class="flex items-center gap-2">
       <button class="timer-btn timer-btn-start" data-action="start" data-id="${problemId}" ${timerState.isRunning ? 'style="display:none;"' : ''}>Start</button>
@@ -579,21 +618,33 @@ function levelToColor(level) {
   }
 }
 
-function buildCalendar(daysToShow = 182) {
+// Calendar configuration for orientation & layout
+const calendarConfig = {
+  pastDays: 30,          // how many days before today to show
+  futureDays: 150,       // how many days after today to show (potential future practice)
+  align: 'left',         // 'left' | 'center'
+  highlightToday: true
+};
+
+function buildCalendar() {
   const calendarMount = document.getElementById('calendar-view-content') || document.getElementById('calendar-view');
   const tooltip = document.getElementById('tooltip');
   if (!calendarMount) return;
 
-  // Build structure
   calendarMount.innerHTML = `
     <div class="calendar-scroll-container">
       <div class="calendar-inner">
         <div class="calendar-month-labels"></div>
+        <div class="calendar-year-labels"></div>
         <div class="calendar-grid"></div>
       </div>
+      <div class="calendar-nav-overlay">
+        <button class="cal-nav cal-nav-left" title="Load earlier">◀</button>
+        <button class="cal-nav cal-nav-right" title="Load later">▶</button>
+      </div>
     </div>
-    <div class="flex justify-between items-center mt-3 text-xs text-gray-500">
-      <span>Problems per day</span>
+    <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
+      <span>Daily practice</span>
       <div class="flex items-center gap-2">
         <span>Less</span>
         <div class="w-3 h-3 rounded-sm" style="background-color: #0e4429;"></div>
@@ -605,55 +656,75 @@ function buildCalendar(daysToShow = 182) {
     </div>`;
 
   const scroll = calendarMount.querySelector('.calendar-scroll-container');
-  const labels = calendarMount.querySelector('.calendar-month-labels');
+  const monthLabels = calendarMount.querySelector('.calendar-month-labels');
+  const yearLabels = calendarMount.querySelector('.calendar-year-labels');
   const grid = calendarMount.querySelector('.calendar-grid');
 
-  // Compute date range: start on Sunday
   const today = new Date();
-  const rawStart = addDays(today, -daysToShow);
-  const start = startOfWeekSunday(rawStart);
-  const totalDays = daysBetween(start, today) + 1;
+  const start = startOfWeekSunday(addDays(today, -calendarConfig.pastDays));
+  const end = addDays(today, calendarConfig.futureDays);
+  const totalDays = daysBetween(start, end) + 1;
   const columns = Math.ceil(totalDays / 7);
-
+  
   calendarState.startDate = start;
   calendarState.columns = columns;
   calendarState.dayNodes.clear();
 
-  // Create month labels per column (week)
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  let lastLabeledMonth = null;
+  let lastMonth = -1;
+  let lastYear = -1;
 
   for (let col = 0; col < columns; col++) {
     const colStart = addDays(start, col * 7);
 
-    // Does this week contain the 1st of any month?
-    let labelText = '';
+    // Month label if week contains 1st OR month changed versus previous column
+    let showMonth = false;
     for (let off = 0; off < 7; off++) {
       const d = addDays(colStart, off);
-      if (d.getDate() === 1) {
-        const m = d.getMonth();
-        if (m !== lastLabeledMonth) {
-          labelText = monthNames[m];
-          lastLabeledMonth = m;
-        }
+      if (d > end) break;
+      if (d.getDate() === 1 || d.getMonth() !== lastMonth) {
+        showMonth = true;
+        lastMonth = d.getMonth();
         break;
       }
     }
 
-    const labelCell = document.createElement('div');
-    labelCell.className = 'calendar-month-label';
-    if (labelText) labelCell.textContent = labelText;
-    labels.appendChild(labelCell);
+    const monthCell = document.createElement('div');
+    monthCell.className = 'calendar-month-label';
+    if (showMonth) monthCell.textContent = monthNames[lastMonth];
+    monthLabels.appendChild(monthCell);
+
+    // Year label IF year changes in this column
+    let showYear = false; 
+    let yearValue = null;
+    for (let off = 0; off < 7; off++) {
+      const d = addDays(colStart, off);
+      if (d > end) break;
+      if (d.getFullYear() !== lastYear) {
+        showYear = true; 
+        yearValue = d.getFullYear(); 
+        lastYear = d.getFullYear();
+        break;
+      }
+    }
+    const yearCell = document.createElement('div');
+    yearCell.className = 'calendar-year-label';
+    if (showYear && yearValue) yearCell.textContent = String(yearValue);
+    yearLabels.appendChild(yearCell);
   }
 
-  // Create day cells (row 0..6 for Sun..Sat) per column
+  // Build day cells
   for (let col = 0; col < columns; col++) {
     const colStart = addDays(start, col * 7);
     for (let row = 0; row < 7; row++) {
       const d = addDays(colStart, row);
+      if (d < start || d > end) continue;
       const key = toLocalKey(d);
       const day = document.createElement('div');
       day.className = 'calendar-day';
+      if (calendarConfig.highlightToday && toLocalKey(d) === toLocalKey(today)) {
+        day.classList.add('today');
+      }
       day.dataset.key = key;
       day.dataset.count = '0';
 
@@ -667,13 +738,9 @@ function buildCalendar(daysToShow = 182) {
       day.addEventListener('mouseleave', () => { if (tooltip) tooltip.style.display = 'none'; });
       day.addEventListener('mousemove', (e) => {
         if (!tooltip) return;
-        const pad = 10;
-        const vw = window.innerWidth;
-        const tw = 180;
-        let left = e.pageX + pad;
-        if (left + tw > vw) left = vw - tw - pad;
-        tooltip.style.left = `${left}px`;
-        tooltip.style.top = `${e.pageY + pad}px`;
+        const pad = 10; const vw = window.innerWidth; const tw = 180;
+        let left = e.pageX + pad; if (left + tw > vw) left = vw - tw - pad;
+        tooltip.style.left = `${left}px`; tooltip.style.top = `${e.pageY + pad}px`;
       });
 
       grid.appendChild(day);
@@ -681,23 +748,24 @@ function buildCalendar(daysToShow = 182) {
     }
   }
 
-  // Drag-to-scroll
+  // Drag scroll (unchanged)
   let isDown = false, startX = 0, scrollLeft = 0;
-  scroll.addEventListener('mousedown', (e) => {
-    isDown = true; scroll.classList.add('grabbing');
-    startX = e.pageX - scroll.offsetLeft; scrollLeft = scroll.scrollLeft;
-  });
+  scroll.addEventListener('mousedown', (e) => { isDown = true; scroll.classList.add('grabbing'); startX = e.pageX - scroll.offsetLeft; scrollLeft = scroll.scrollLeft; });
   scroll.addEventListener('mouseleave', () => { isDown = false; scroll.classList.remove('grabbing'); });
   scroll.addEventListener('mouseup', () => { isDown = false; scroll.classList.remove('grabbing'); });
-  scroll.addEventListener('mousemove', (e) => {
-    if (!isDown) return;
-    e.preventDefault();
-    const x = e.pageX - scroll.offsetLeft;
-    scroll.scrollLeft = scrollLeft - (x - startX) * 2;
-  });
+  scroll.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - scroll.offsetLeft; scroll.scrollLeft = scrollLeft - (x - startX) * 2; });
 
-  // Show latest
-  scroll.scrollLeft = scroll.scrollWidth;
+  // Alignment: left (default) or center around today column
+  if (calendarConfig.align === 'center') {
+    // Estimate today column
+    const todayIndex = daysBetween(start, today);
+    const todayColumn = Math.floor(todayIndex / 7);
+    const columnWidth =  parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cal-col')) || 20;
+    const target = Math.max(0, (todayColumn * columnWidth) - (scroll.clientWidth / 2) + columnWidth / 2);
+    scroll.scrollLeft = target;
+  } else {
+    scroll.scrollLeft = 0; // start at today on left
+  }
 }
 
 function updateCalendarColors() {
@@ -714,7 +782,7 @@ function updateCalendarColors() {
 
 // Call this after build or on state changes
 function renderCalendarAccurate() {
-  buildCalendar(182);
+  buildCalendar();
   updateCalendarColors();
 }
 

@@ -1,7 +1,7 @@
 {
   "name": "codequest-coach",
   "displayName": "CodeQuest Coach",
-  "description": "Voice-friendly LeetCode practice dashboard inside VS Code: patterns, timers, activity stats, streaks.",
+  "description": "LeetCode practice dashboard inside VS Code: patterns, timers, activity stats, streaks.",
   "version": "0.1.0",
   "publisher": "you",
   "repository": {
@@ -155,8 +155,5 @@
     "sinon": "^21.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "@google/generative-ai": "^0.24.1"
   }
 }

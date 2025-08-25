@@ -24,12 +24,9 @@ export function parseProblemPath(filePath?: string): ProblemInfo | null {
     return null;
   }
 
-  // Normalize path separators for consistent matching
-  const normalizedPath = filePath.replace(/\\/g, '/');
-  
-  // Regex that handles absolute paths and finds the patterns folder
-  const regex = /.*patterns\/([^\/]+)\/problem-(\d+)-([^\/]+)\/(\d{4}-\d{2}-\d{2})\/homework\.js$/i;
-  const match = normalizedPath.match(regex);
+  // Use the exact regex from the specification - handles both / and \ separators
+  const regex = /patterns[\/\\]([^\/\\]+)[\/\\]problem-(\d+)-([^\/\\]+)[\/\\]([0-9]{4}-[0-9]{2}-[0-9]{2})[\/\\]homework\.js$/i;
+  const match = filePath.match(regex);
 
   if (!match) {
     return null;

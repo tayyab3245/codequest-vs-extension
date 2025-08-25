@@ -194,6 +194,19 @@ export function buildDashboardHtml(options: DashboardHtmlOptions): string {
             border-radius: 4px;
             background-color: var(--dark-shadow);
             box-shadow: inset 2px 2px 4px #23272d, inset -2px -2px 4px #353a43;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .segment:hover {
+            background-color: var(--button-color);
+            transform: scale(1.05);
+        }
+        
+        .segment.active {
+            background: linear-gradient(145deg, #3b82f6, #2563eb);
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.5), inset 1px 1px 2px rgba(255,255,255,0.1);
+            transform: scale(1.1);
         }
         
         .pattern[data-progress="1"] .segment:nth-child(-n+1),

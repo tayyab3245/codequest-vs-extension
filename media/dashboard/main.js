@@ -98,36 +98,40 @@ function updatePatternsFromCatalog(catalog) {
         for (const [patternName, bands] of Object.entries(catalog)) {
             const questions = [];
             
-            // Combine all bands
-            for (const [band, problems] of Object.entries(bands)) {
-                if (Array.isArray(problems)) {
-                    problems.forEach((problem, index) => {
-                        const questionKey = `${patternName}/${problem.slug}`;
-                        const isSolved = backendState?.solvedKeys?.includes(questionKey) || false;
-                        
-                        questions.push({
-                            title: problem.title,
-                            slug: problem.slug,
-                            pattern: patternName,
-                            status: isSolved ? 'solved' : 'unsolved',
-                            band: band,
-                            url: problem.url
-                        });
+            // Process each band (1-5) to get exactly 4 questions per band
+            for (let bandNumber = 1; bandNumber <= 5; bandNumber++) {
+                const bandProblems = bands[bandNumber] || [];
+                
+                // Take up to 4 questions from this band
+                const bandQuestions = bandProblems.slice(0, 4);
+                
+                bandQuestions.forEach((problem, index) => {
+                    const questionKey = `${patternName}/${problem.slug}`;
+                    const isSolved = backendState?.solvedKeys?.includes(questionKey) || false;
+                    
+                    questions.push({
+                        title: problem.title,
+                        slug: problem.slug,
+                        pattern: patternName,
+                        status: isSolved ? 'solved' : 'unsolved',
+                        band: parseInt(bandNumber), // Ensure band is a number
+                        url: problem.url
                     });
-                }
+                });
             }
             
-            // Take first 4 questions for display
-            const displayQuestions = questions.slice(0, 4);
-            
-            newPatternsData.push({
-                name: patternName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                questions: displayQuestions
-            });
+            // Now we have up to 20 questions (4 per band × 5 bands)
+            if (questions.length > 0) {
+                newPatternsData.push({
+                    name: patternName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                    questions: questions
+                });
+            }
         }
         
         if (newPatternsData.length > 0) {
             console.log('🔄 Updated patterns from catalog:', newPatternsData.length, 'patterns');
+            console.log('📊 Questions per pattern:', newPatternsData.map(p => `${p.name}: ${p.questions.length} questions`));
             patternsData = newPatternsData;
             updatePaginationConfig(); // Update pagination based on real data
             renderPages(); // Re-render with real data
@@ -204,9 +208,29 @@ function createPatternElement(pattern) {
     
     const barEl = document.createElement('div');
     barEl.className = 'segmented-bar';
+    
+    // Create 5 segments for 5 question sets (B1-B5)
     for (let i = 0; i < 5; i++) {
         const segment = document.createElement('span');
         segment.className = 'segment';
+        if (i === 0) segment.classList.add('active'); // B1 active by default
+        segment.dataset.questionSet = i;
+        segment.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent triggering header collapse/expand
+            
+            // Update active segment visual
+            barEl.querySelectorAll('.segment').forEach(s => s.classList.remove('active'));
+            segment.classList.add('active');
+            
+            // Filter questions to show only this band
+            filterQuestionsByBand(patternEl, i + 1); // i+1 because bands are 1-indexed
+            
+            // Ensure questions container is expanded
+            const questionsContainer = patternEl.querySelector('.questions-container');
+            if (questionsContainer && !questionsContainer.style.maxHeight) {
+                questionsContainer.style.maxHeight = questionsContainer.scrollHeight + "px";
+            }
+        });
         barEl.appendChild(segment);
     }
     
@@ -216,18 +240,48 @@ function createPatternElement(pattern) {
     const questionsContainerEl = document.createElement('div');
     questionsContainerEl.className = 'questions-container';
     
+    // Load ALL questions from ALL bands for this pattern
+    loadAllQuestions(pattern, questionsContainerEl);
+    
+    // Initially show B1 questions (band 1)
+    filterQuestionsByBand(patternEl, 1);
+    
+    headerEl.addEventListener('click', (e) => {
+        // Only toggle if clicking on header, not on segments
+        if (!e.target.classList.contains('segment')) {
+            if (questionsContainerEl.style.maxHeight) {
+                questionsContainerEl.style.maxHeight = null;
+            } else {
+                questionsContainerEl.style.maxHeight = questionsContainerEl.scrollHeight + "px";
+            }
+        }
+    });
+    
+    patternEl.appendChild(headerEl);
+    patternEl.appendChild(questionsContainerEl);
+    
+    updatePatternProgress(patternEl);
+    return patternEl;
+}
+
+// Load all questions from all bands into the container (but hide them initially)
+function loadAllQuestions(pattern, questionsContainer) {
+    questionsContainer.innerHTML = ''; // Clear existing questions
+    
     pattern.questions.forEach((q, index) => {
-        const questionId = `${pattern.name.replace(/\s/g, '-')}-${index}`;
+        const questionId = `${pattern.name.replace(/\s/g, '-')}-${q.band}-${index}`;
         const questionItemEl = document.createElement('div');
         questionItemEl.className = 'question-item';
-        questionItemEl.dataset.status = q.status;
+        questionItemEl.dataset.status = q.status || 'unsolved';
+        questionItemEl.dataset.band = q.band; // Store band for filtering
+        questionItemEl.style.display = 'none'; // Hide initially
         
         const statusIndicator = document.createElement('span');
-        statusIndicator.className = `status-indicator ${q.status}`;
+        statusIndicator.className = `status-indicator ${q.status || 'unsolved'}`;
         
         const questionTitle = document.createElement('span');
         questionTitle.className = 'question-title';
-        questionTitle.textContent = `B${Math.floor(index / 4) + 1} - ${q.title}`;
+        questionTitle.textContent = `B${q.band} - ${q.title}`;
         
         const actionsWrapper = document.createElement('div');
         actionsWrapper.className = 'actions';
@@ -288,28 +342,43 @@ function createPatternElement(pattern) {
             }
             questionItemEl.dataset.status = question.status;
             statusIndicator.className = `status-indicator ${question.status}`;
+            
+            // Update progress for the pattern
+            const patternEl = questionItemEl.closest('.pattern');
             updatePatternProgress(patternEl);
         };
         
         actionsWrapper.append(timerEl, startBtn, solveBtn);
         questionItemEl.append(statusIndicator, questionTitle, actionsWrapper);
-        questionsContainerEl.appendChild(questionItemEl);
+        questionsContainer.appendChild(questionItemEl);
     });
+}
+
+// Filter questions to show only the specified band
+function filterQuestionsByBand(patternEl, bandNumber) {
+    const questionsContainer = patternEl.querySelector('.questions-container');
+    if (!questionsContainer) return;
     
-    headerEl.addEventListener('click', () => {
-        if (questionsContainerEl.style.maxHeight) {
-            questionsContainerEl.style.maxHeight = null;
+    const allQuestions = questionsContainer.querySelectorAll('.question-item');
+    let visibleCount = 0;
+    
+    allQuestions.forEach(questionEl => {
+        const questionBand = parseInt(questionEl.dataset.band);
+        if (questionBand === bandNumber && visibleCount < 4) {
+            questionEl.style.display = 'flex';
+            visibleCount++;
         } else {
-            questionsContainerEl.style.maxHeight = questionsContainerEl.scrollHeight + "px";
+            questionEl.style.display = 'none';
         }
     });
     
-    patternEl.appendChild(headerEl);
-    patternEl.appendChild(questionsContainerEl);
-    updatePatternProgress(patternEl);
-    return patternEl;
+    // Update container height after filtering
+    if (questionsContainer.style.maxHeight) {
+        questionsContainer.style.maxHeight = questionsContainer.scrollHeight + "px";
+    }
 }
 
+// Function to show questions for a specific set (B1, B2, B3, B4, B5)
 // Pagination functionality (dynamic based on real data)
 const patternsPerPage = 6;
 let currentPage = 0;
@@ -359,7 +428,8 @@ function renderPaginationControls() {
         const segment = document.createElement('div');
         segment.className = 'page-segment';
         segment.dataset.page = i;
-        segment.addEventListener('click', () => {
+        segment.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent bubbling to parent click handlers
             currentPage = i;
             updatePagination();
         });
